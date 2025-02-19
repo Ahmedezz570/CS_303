@@ -29,6 +29,12 @@ export default function TabLayout() {
           <Ionicons name='person-outline' size={22} color={color} />
         )
       }} />
+      <Tabs.Screen name='About' options={{
+        title: 'About',
+        tabBarIcon: ({color}) => (
+          <Ionicons name='information-circle-outline' size={22} color={color} />
+        )
+      }} />
     </Tabs>
   );
 }
