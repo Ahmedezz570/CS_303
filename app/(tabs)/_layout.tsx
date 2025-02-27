@@ -10,13 +10,19 @@ export default function TabLayout() {
           <Ionicons name='home-outline' size={22} color={color} />
         )
       }} />
-     
+              <Tabs.Screen name='products' options={{
+        title: 'Products',
+        tabBarIcon: ({ color }) => (
+          <Ionicons name='pricetags-outline' size={22} color={color} />
+        )
+      }} />
       <Tabs.Screen name='notifications' options={{
         title: 'Notification',
         tabBarIcon: ({color}) => (
           <Ionicons name='notifications-outline' size={22} color={color} />
         )
       }} />
+      
       <Tabs.Screen name='cart' options={{
         title: 'Cart',
         tabBarIcon: ({color}) => (
@@ -35,6 +41,7 @@ export default function TabLayout() {
           <Ionicons name='information-circle-outline' size={22} color={color} />
         )
       }} />
+
     </Tabs>
   );
 }
