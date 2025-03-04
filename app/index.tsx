@@ -1,9 +1,17 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React , {useEffect} from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 
 const WelcomeScreen = () => {
   const router = useRouter();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.push('/Login');
+    }, 3000); 
+
+    return () => clearTimeout(timer);
+  }, []);
+
   
   return (
     <>
@@ -14,9 +22,7 @@ const WelcomeScreen = () => {
           <Text style={styles.title}>SUPERMALL</Text>
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/Login')}>
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
+       
       </View>
     </>
   );
@@ -38,27 +44,14 @@ const styles = StyleSheet.create({
     fontSize: 38,
     fontWeight: 'bold',
     color: '#4A3222',
-    marginTop: 10,
+    marginTop: 1,
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 90,
+    height: 100,
     resizeMode: 'contain',
-  },
-  button: {
-    position: 'absolute',
-    bottom: 50, 
-    backgroundColor: '#6F4E37',
-    paddingVertical: 15,
-    paddingHorizontal: 90,
-    borderRadius: 25,
-  },
-  buttonText: {
-    fontSize: 15,
-    color: '#FFF',
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
+  }
 });
 
 export default WelcomeScreen;
+

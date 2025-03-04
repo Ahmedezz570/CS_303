@@ -1,5 +1,5 @@
 import { View, Text, FlatList, Image, StyleSheet, TextInput } from 'react-native';
-import {React,useState} from 'react';
+import React , {useState} from 'react';
 import daata from '../data.js'
 import images from '.././images.js';
 
@@ -25,7 +25,6 @@ const products = () => {
           placeholder=" search" style={{color: 'black',
             height: 50,
             width: '90%',
-
             borderWidth: 1,
             borderColor: '#000',
             marginBottom: '5%',
@@ -63,18 +62,19 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     backgroundColor: '#FAE5D3',
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: '#f9f9f9',
     padding: 0,
     borderRadius: 18,
-    marginBottom: '0.5%',
+    margin: 4,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    width: '50%',
+    width: '48%',
     aspectRatio: 1,
     overflow: 'hidden',
   },
