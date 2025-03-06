@@ -1,6 +1,5 @@
 import { Stack } from 'expo-router';
 import React from 'react';
-
 const Layout = () => {
   return (
     <Stack>
@@ -8,7 +7,9 @@ const Layout = () => {
       <Stack.Screen name="Login" />
       <Stack.Screen name="Register"  />
       {/* <Stack.Screen name="About"  /> */}
-    </Stack>
+      <Stack.Screen name="singlepage"   options={{ headerShown: false }} 
+ />
+      </Stack>
   );
 }
 
