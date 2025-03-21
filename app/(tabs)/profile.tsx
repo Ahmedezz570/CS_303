@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { router } from 'expo-router'
 
 const profile = () => {
-  const [isEnabled, setIsEnabled] = useState(false);
   return (
     <View style={styles.container}>
       <Image source={require('../../assets/images/profile.jpg')} style={styles.logo} />
@@ -12,7 +11,6 @@ const profile = () => {
         <View style={styles.info}>
           <View style={{ display:"flex",flexDirection:"row"}}>
           <Text style={styles.name}>Anas Gamal</Text>
-          {isEnabled === false ? <Image source={require('../../assets/images/male.png')} style={{ width: 25, height: 25, marginLeft: 5 }} /> : <Image source={require('../../assets/images/female.png')} style={{ width: 25, height: 25, marginLeft: 2 }} />}
           </View>
           <Text style={styles.mail}>anslahga@gmail.com</Text>
           <Text style={styles.mail}>01032672532</Text>
@@ -23,6 +21,14 @@ const profile = () => {
           </TouchableOpacity>
         </View>
       </View>
+      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/orders') }} activeOpacity={0.6}>
+        <View style={{ display: "flex", flexDirection: "row" }}>
+          <Text style={styles.textb}>Orders</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
+        </View>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/address') }} activeOpacity={0.6}>
         <View style={{ display: "flex", flexDirection: "row" }}>
           <Text style={styles.textb}>Address</Text>
@@ -52,7 +58,7 @@ const profile = () => {
 
       <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/help') }} activeOpacity={0.6}>
         <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Help</Text>
+          <Text style={styles.textb}>Help & Support</Text>
         </View>
         <View style={{ flex: 1 }}>
           <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
@@ -60,14 +66,8 @@ const profile = () => {
       </TouchableOpacity>
 
 
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/support') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Support</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
+
+
       <View style={{ flexGrow: 1, justifyContent: "center", width: "100%", alignItems: "center" }}>
         <TouchableOpacity style={styles.out} onPress={() => { alert("Signed Out Successfully"), router.push('/Login') }} activeOpacity={0.4}>
           {/* <Link href={'../Login'} style={styles.out}> */}
