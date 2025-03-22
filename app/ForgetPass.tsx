@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 const ForgetPass = () => {
     const back=()=>{
-        router.push('/Register');
+        router.replace('/Register');
       }
   return (
   <View style={styles.fl}>
@@ -63,7 +63,7 @@ width:'95%',
   },
   backbut:{
     paddingTop: 5,
-     marginLeft:'5%',
+     marginLeft:'2.5%',
      alignSelf:"flex-start",
      width:30,
      height:30,

@@ -5,11 +5,11 @@ import { router } from 'expo-router'
 
 const Register= () => { 
   const back=()=>{
-    router.push('/Login');
+    router.replace('/Login');
   }
 
   const reset=()=>{
-    router.push('/ForgetPass');
+    router.replace('/ForgetPass');
   }
   return (
     <View style={styles.fl}>
@@ -92,7 +92,7 @@ width:'95%',
     color: 'black',
   },
 semif:{
- width:'90%',
+  width:'95%',
   flexDirection:'row',
   justifyContent:'flex-start',
   alignItems:'flex-start',
@@ -100,7 +100,7 @@ semif:{
 },
 backbut:{
  paddingTop: 5,
-  marginLeft:'5%',
+  marginLeft:'2.5%',
   alignSelf:"flex-start",
   width:30,
   height:30,

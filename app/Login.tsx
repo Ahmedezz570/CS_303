@@ -4,10 +4,10 @@ import { router } from 'expo-router'
 import { FontAwesome } from '@expo/vector-icons';
 const Login= () => { 
   const signin=()=>{
-    router.push('/(tabs)');
+    router.replace('/(tabs)');
   }
   const reg=()=>{
-    router.push('/Register');
+    router.replace('/Register');
   }
   return (
    <View style={styles.fl}>
@@ -139,7 +139,7 @@ button1a: {
     color: 'black',
   },
 semif:{
- width:'90%',
+  width:'95%',
   flexDirection:'row',
   justifyContent:'flex-start',
   alignItems:'flex-start',
