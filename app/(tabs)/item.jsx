@@ -40,7 +40,7 @@ const Item = ({ item }) => {
                 onPress={() => router.push('/singlepage')}
                 onLongPress={() => setModelVisable(true)}>
                 <Image
-                    source={images[item.id] || require('../assets/images/1311208428.png')}
+                    source={images[item.id] || require('../../assets/images/1311208428.png')}
                     style={{ width: 100, height: 100 }}
                     resizeMode="contain"
                 />

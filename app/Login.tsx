@@ -1,13 +1,14 @@
 import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React from 'react'
-import { router } from 'expo-router'
+import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 const Login= () => { 
+  const router = useRouter();
   const signin=()=>{
-    router.push('/home');
+    router.replace('/(tabs)');
   }
   const reg=()=>{
-    router.push('/Register');
+    router.replace('/Register');
   }
   return (
    <View style={styles.fl}>
@@ -139,7 +140,7 @@ button1a: {
     color: 'black',
   },
 semif:{
- width:'90%',
+  width:'95%',
   flexDirection:'row',
   justifyContent:'flex-start',
   alignItems:'flex-start',

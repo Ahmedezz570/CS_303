@@ -1,10 +1,12 @@
 import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React from 'react'
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 const ForgetPass = () => {
-    const back=()=>{
-        router.push('/Register');
+      const router = useRouter();
+    
+  const back=()=>{
+        router.replace('/Register');
       }
   return (
   <View style={styles.fl}>
@@ -63,7 +65,7 @@ width:'95%',
   },
   backbut:{
     paddingTop: 5,
-     marginLeft:'5%',
+     marginLeft:'2.5%',
      alignSelf:"flex-start",
      width:30,
      height:30,
