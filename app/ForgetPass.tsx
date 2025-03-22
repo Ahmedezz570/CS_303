@@ -1,9 +1,11 @@
 import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React from 'react'
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 const ForgetPass = () => {
-    const back=()=>{
+      const router = useRouter();
+    
+  const back=()=>{
         router.replace('/Register');
       }
   return (
