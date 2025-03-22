@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { FontAwesome } from '@expo/vector-icons';
 const Login= () => { 
   const signin=()=>{
-    router.push('/(tabs)');
+    router.push('/home');
   }
   const reg=()=>{
     router.push('/Register');
