@@ -1,12 +1,56 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View , Alert} from 'react-native'
+import React , {useState}from 'react'
 import { useRouter } from 'expo-router';
+import { auth, db } from '../Firebase/Firebase'; 
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 
 
 const Register= () => { 
+
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
     const router = useRouter();
   
+
+    const handleRegister = async () => {
+      if (!username || !email || !password) {
+        Alert.alert("Error", "Please fill all fields");
+        return;
+      }
+
+    
+      if (password.length < 6) {
+        Alert.alert("Weak Password");
+        return;
+      }
+    
+      try {
+        const createUser = await createUserWithEmailAndPassword(auth, email, password);
+        const user = createUser.user;
+    
+        await setDoc(doc(db, "Users", user.uid), {
+          username,
+          email: email.trim(),
+          uid: user.uid,
+          image: "https://randomuser.me/api/portraits/men/1.jpg",
+          isAdmin: false,
+          isBlocked: false,
+        });
+    
+        Alert.alert("Success", "User created successfully");
+        router.replace('/Login');
+      } catch (error) {
+        Alert.alert("Registration Error", error.message);
+      }
+    }
+    
+    
+
+
   const back=()=>{
     router.replace('/Login');
   }
@@ -23,11 +67,11 @@ const Register= () => {
           <Text style={{ textAlign: "center" }}>&lt;</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Create Account</Text>
-        <TextInput placeholder="Username" style={styles.input} />
-        <TextInput placeholder="Email Address" style={styles.input} />
-        <TextInput placeholder="Password" style={styles.input} secureTextEntry />
+        <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={setUsername}/>
+        <TextInput placeholder="Email Address" style={styles.input}  value={email} onChangeText={setEmail}/>
+        <TextInput placeholder="Password" style={styles.input} secureTextEntry value={password} onChangeText={setPassword}/>
 
-        <TouchableOpacity style={styles.button} >
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
         <View style={styles.semif}>

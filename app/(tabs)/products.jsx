@@ -2,7 +2,7 @@ import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity } 
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import daata from '../data.js';
-import images from '.././images.js';
+import images from '../images.js';
 
 const Products = () => {
   const [data, setData] = useState(daata);

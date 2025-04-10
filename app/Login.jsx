@@ -1,12 +1,42 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React , {useState}from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import {  signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../Firebase/Firebase'; 
+import { getDoc, doc } from 'firebase/firestore';
 const Login= () => { 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
   const router = useRouter();
-  const signin=()=>{
-    router.replace('/(tabs)');
+  const signin = async () => {
+    setError('');
+  
+    if (!email || !password) {
+      setError('Please fill all fields');
+      return;
+    }
+  
+    try {
+      const getUser = await signInWithEmailAndPassword(auth, email, password);
+      const user = getUser.user;
+      const userDoc = await getDoc(doc(db, "Users", user.uid));
+  
+      if (userDoc.exists()) {
+        Alert.alert("Success", "User logged in successfully");
+        router.replace('/(tabs)');
+      } else {
+        setError('User not found.');
+      }
+  
+    } catch (error) {
+      setError('Invalid email or password.');
+      console.error(error.message);
+    }
   }
+  
   const reg=()=>{
     router.replace('/Register');
   }
@@ -15,8 +45,21 @@ const Login= () => {
    <View style={styles.container}>
       <Text style={styles.title}>Sign in</Text>
      
-      <TextInput placeholder="Email Address" style={styles.input} />
-      <TextInput placeholder="Password" style={styles.input} secureTextEntry />
+      <TextInput 
+  placeholder="Email Address" 
+  style={styles.input} 
+  value={email}
+  onChangeText={(text) => setEmail(text)}
+/>
+
+<TextInput 
+  placeholder="Password" 
+  style={styles.input} 
+  secureTextEntry 
+  value={password}
+  onChangeText={(text) => setPassword(text)}
+/>
+
       
       <TouchableOpacity style={styles.button} onPress={signin}>
         <Text style={styles.buttonText}>Sign In</Text>
