@@ -20,7 +20,7 @@ const Products = () => {
     };
     getProducts();
   }, []);
-
+  
   const handleSearch = (text) => {
     const filtered = data.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
     setFilteredData(filtered);

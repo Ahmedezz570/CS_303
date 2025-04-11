@@ -47,11 +47,16 @@ const ProductDetails = () => {
                         <Ionicons name="heart" size={24} color="#333" />
                     </TouchableOpacity>
                 </View>
-
                 <Image 
-                    source={{ uri : product.image || require("../assets/images/R.jpeg")}} 
-                    style={styles.image} 
-                />
+                        source={
+                            typeof product.image === 'string'
+                            ? { uri: product.image }
+                            : require("../assets/images/loading-buffering.gif")
+                        }  
+                        style={styles.image}
+                        />
+
+
                 <Text style={styles.name}>{product?.name}</Text>
                 <Text style={styles.description}>{product?.description}</Text>
                 <Text style={styles.price1}>{product?.price} EGP</Text>
