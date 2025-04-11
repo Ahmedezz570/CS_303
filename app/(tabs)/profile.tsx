@@ -1,83 +1,176 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
-import { router } from 'expo-router'
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Stack } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { auth, getUserData } from '../../Firebase/Firebase';
 
 const Profile = () => {
-  return (
-    <View style={styles.container}>
-      <Image source={require('../../assets/images/profile.jpg')} style={styles.logo} />
+  const [userData, setUserData] = useState<any>(null);
 
-      <View style={styles.infobox}>
-        <View style={styles.info}>
-          <View style={{ display:"flex",flexDirection:"row"}}>
-          <Text style={styles.name}>Anas Gamal</Text>
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const currentUser = auth.currentUser;
+
+      if (currentUser) {
+        const data = await getUserData(currentUser.uid);
+        setUserData(data);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  return (
+    <>
+      <Stack.Screen name="Profile" options={{ headerShown: false }} />
+      <View style={styles.container}>
+        <Image source={{ uri: userData?.image }} style={styles.logo} />
+
+        <View style={styles.infobox}>
+          <View style={styles.info}>
+            <View style={{ display: "flex", flexDirection: "row" }}>
+              <Text style={styles.name}>
+                {(String(userData?.username).toUpperCase()) == "UNDEFINED" ? "Please Login..." : String(userData?.username).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.mail}>
+              {(String(userData?.email).toLowerCase()) == "undefined" ? "Please Login..." : String(auth.currentUser?.email).toLowerCase()}
+            </Text>
+            <Text style={styles.mail}>
+              {userData?.phone}
+            </Text>
           </View>
-          <Text style={styles.mail}>anslahga@gmail.com</Text>
-          <Text style={styles.mail}>01032672532</Text>
+          <View style={styles.edit}>
+            <TouchableOpacity
+              style={{ width: 60, height: 35, padding: 5 }}
+              onPress={() => {
+                router.push('../(ProfileTabs)/editprofile');
+              }}
+              activeOpacity={0.4}
+            >
+              <Text style={styles.edittext}>Edit</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.edit}>
-          <TouchableOpacity style={{ width: 60, height: 35, padding: 5, }} onPress={() => { router.push('../(ProfileTabs)/editprofile') }} activeOpacity={0.4}>
-            <Text style={styles.edittext}>Edit</Text>
+
+        {/* Other profile tabs */}
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/orders');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>Orders</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/address');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>Address</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/Wishlist');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>Wishlist</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/Payment');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>Payment</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/help');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>Help & Support</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
+
+        {/* Sign Out Button */}
+        <View
+          style={{
+            flexGrow: 1,
+            justifyContent: "center",
+            width: "100%",
+            alignItems: "center",
+          }}
+        >
+          <TouchableOpacity
+            style={styles.out}
+            onPress={() => {
+              auth.signOut();
+              alert("Signed Out Successfully");
+              router.push('/Login');
+            }}
+            activeOpacity={0.4}
+          >
+            <Text style={{ fontSize: 20, color: "darkred", fontWeight: "bold" }}>
+              Sign Out
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/orders') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Orders</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/address') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Address</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/Wishlist') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Wishlist</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/Payment') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Payment</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.profiletabs} onPress={() => { router.push('../(ProfileTabs)/help') }} activeOpacity={0.6}>
-        <View style={{ display: "flex", flexDirection: "row" }}>
-          <Text style={styles.textb}>Help & Support</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Image source={require("../../assets/images/backtab.png")} style={styles.backtab} />
-        </View>
-      </TouchableOpacity>
-
-
-
-
-      <View style={{ flexGrow: 1, justifyContent: "center", width: "100%", alignItems: "center" }}>
-        <TouchableOpacity style={styles.out} onPress={() => { alert("Signed Out Successfully"), router.push('/Login') }} activeOpacity={0.4}>
-          {/* <Link href={'../Login'} style={styles.out}> */}
-          <Text style={{ fontSize: 20, color: "darkred", fontWeight: "bold" }}>Sign Out</Text>
-          {/* </Link> */}
-        </TouchableOpacity>
-      </View>
-    </View>
-  )
-}
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -185,6 +278,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-})
-export default Profile
+});
+
+export default Profile;
 

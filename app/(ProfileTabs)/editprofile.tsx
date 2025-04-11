@@ -1,11 +1,15 @@
 import { Stack, router } from 'expo-router';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions, Switch } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import * as ImagePicker from 'expo-image-picker';
+import { auth, getUserData } from '../../Firebase/Firebase';
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../../Firebase/Firebase";
+import { updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+
 const editprofile = () => {
   const [image, setImage] = useState<string | null>(null);
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -20,65 +24,122 @@ const editprofile = () => {
       setImage(null);
     }
   };
-  const [isEnabled, setIsEnabled] = useState(false);
-  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+  const [userData, setUserData] = useState<any>(null);
+  const [fullname, setFullname] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [num, setNum] = useState<string | null>(null);
+  const [password, setPassword] = useState<string | null>(null);
+
+
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const data = await getUserData(currentUser.uid);
+        setUserData(data);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  async function Update() {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const docRef = doc(db, "Users", currentUser?.uid);
+      if (username != null || "") {
+        await updateDoc(docRef, {
+          username: username,
+        });
+      }
+      if (num != null || "") {
+        await updateDoc(docRef, {
+          phone: num,
+        });
+      }
+      if (fullname != null || "") {
+        await updateDoc(docRef, {
+          fullname: fullname,
+        });
+      }
+      if (email != null || "") {
+        if (password != null || "") {
+          await updateDoc(docRef, {
+            email: email,
+          });
+          updateEmail(currentUser, String(email)).then(() => { }).catch((error) => {
+            if (error.code === 'auth/requires-recent-login') {
+              const credential = EmailAuthProvider.credential(String(auth.currentUser?.email), String(password));
+              reauthenticateWithCredential(currentUser, credential).then(() => {
+                updateEmail(currentUser, String(email)).then(() => { })
+              })
+            }
+          });
+        }
+        else {
+          alert("Please Enter Your Password");
+        }
+      }
+      alert("Thanks For Updates ✨")
+      router.push("../(tabs)/profile")
+    } else {
+      alert("No user is currently logged in.");
+      router.push("../Login")
+    }
+  }
+
   return (
     <>
       <Stack.Screen name="address" options={{ headerShown: false, }} />
       <View style={styles.container}>
-        <TouchableOpacity style={{ position: "absolute", top: 70, left: 30 }} onPress={() => { router.push('../(tabs)/profile') }}>
+        <TouchableOpacity style={{ position: "absolute", top: 40, left: 30 }} onPress={() => { router.push('../(tabs)/profile') }}>
           <Image source={require('../../assets/images/backbutton.png')} style={styles.back} />
         </TouchableOpacity>
-        <TouchableOpacity style={{ position: 'absolute', top: 160, }} onPress={pickImage}>
-          <Image source={image ? { uri: image } : require('../../assets/images/profile.jpg')} style={styles.logo} />
-          <Image source={require('../../assets/images/logoedit.png')} style={{ position: "absolute", bottom: 0 ,opacity:0.7}} />
+        <TouchableOpacity style={{ position: 'absolute', top: 110, }} onPress={pickImage}>
+          <Image source={image ? { uri: image } : { uri: userData?.image }} style={styles.logo} />
+          <Image source={require('../../assets/images/logoedit.png')} style={{ position: "absolute", bottom: 0, opacity: 0.7 }} />
         </TouchableOpacity>
-
-
-
-        <View style={{ position: "absolute", width: "100%", top: 300, alignItems: "flex-start", display: 'flex', flexDirection: 'row', justifyContent: "space-around" }}>
-
-
-          <View>
-            <View>
-              <Text style={styles.text}> Display name</Text>
-              <TextInput style={styles.inputbox} placeholder='Anas Gamal Kamel' />
-            </View>
-
-            <View>
-              <Text style={styles.text}> Email</Text>
-              <TextInput style={styles.inputbox} placeholder='anslahga@gmail.com' keyboardType="email-address" />
-            </View>
-
-
-            <View>
-              <Text style={styles.text}> Change Password</Text>
-              <TextInput style={styles.inputbox} placeholder='✪✪✪✪✪✪✪✪✪✪' keyboardType="visible-password"/>
-            </View>
-          </View>
-
-
+        <View style={{ position: "absolute", width: "100%", top: 240, alignItems: "flex-start", display: 'flex', flexDirection: 'row', justifyContent: "space-around" }}>
           <View>
             <View>
               <Text style={styles.text}> Username</Text>
-              <TextInput style={styles.inputbox} placeholder='ANAS' />
+              <TextInput style={styles.inputbox} placeholder={String(userData?.username).toUpperCase()} onChangeText={(text) => { setUsername(text); }} />
             </View>
 
             <View>
               <Text style={styles.text}> Phone Number</Text>
-              <TextInput style={styles.inputbox} placeholder='01032672532' keyboardType="number-pad" />
+              <TextInput style={styles.inputbox} placeholder={userData?.phone} keyboardType="number-pad" onChangeText={(text) => { setNum(text); }} />
             </View>
-
 
 
           </View>
 
+          <View>
+            <View>
+              <Text style={styles.text}> Full Name</Text>
+              <TextInput style={styles.inputbox} placeholder={userData?.fullname} keyboardType="email-address" onChangeText={(text) => { setFullname(text); }} />
+            </View>
+
+
+          </View>
+        </View>
+
+        <View style={{ position: "absolute", width: "97%", top: 415, alignItems: "flex-start", display: 'flex', flexDirection: 'row', justifyContent: "space-around", borderWidth: 2, borderColor: "black", borderRadius: 10, padding: 5 }}>
+          <View>
+            <Text style={styles.text}> Email</Text>
+            <TextInput style={styles.inputbox} placeholder={String(auth.currentUser?.email).toLowerCase()} keyboardType="email-address" onChangeText={(text) => { setEmail(text); }} />
+          </View>
+
+          <View>
+            <Text style={styles.text}> *Current Password</Text>
+            <TextInput style={styles.inputbox} placeholder='✪✪✪✪✪✪✪✪✪✪' keyboardType="visible-password" onChangeText={(text) => { setPassword(text); }} />
+          </View>
 
         </View>
 
-
-
-        <TouchableOpacity onPress={() => { alert("Thanks For Updates ✨"), router.push("../(tabs)/profile") }} style={{ position: 'absolute', top: Dimensions.get('window').height - 120 }}>
+        <TouchableOpacity onPress={() => { Update() }} style={{ position: 'absolute', top: Dimensions.get('window').height - 120 }}>
           <View>
             <Image source={require("../../assets/images/confirm.png")} style={styles.confirm} />
             <Image source={require("../../assets/images/save.png")} style={styles.save} />
@@ -117,7 +178,7 @@ const styles = StyleSheet.create({
   },
   inputbox: {
     height: 40,
-    width: Dimensions.get('window').width / 2.5,
+    width: (Dimensions.get('window').width / 2.5) + 15,
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 10,
@@ -126,15 +187,15 @@ const styles = StyleSheet.create({
     elevation: 10,
     marginBottom: 20,
   },
-  gender:{
+  gender: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth:1,
-    borderRadius:10,
-    backgroundColor:"silver",
-    height:40,
-    width:150,
+    borderWidth: 1,
+    borderRadius: 10,
+    backgroundColor: "silver",
+    height: 40,
+    width: 150,
     elevation: 10,
   },
   back: {
