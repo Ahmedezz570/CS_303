@@ -45,6 +45,7 @@ const Register= () => {
         router.replace('/Login');
       } catch (error) {
         Alert.alert("Registration Error", error.message);
+        Alert.alert("Error", "Failed to sign in with Google.");
       }
     }
     

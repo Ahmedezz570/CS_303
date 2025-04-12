@@ -8,11 +8,10 @@ const { width } = Dimensions.get("window");
 
 const Item = ({ item }) => {
     const [pressed, setPressed] = useState(false);
-    const [modelVisable, setModelVisable] = useState(false); // ✅ Corrected state name
+    const [modelVisable, setModelVisable] = useState(false);
 
     return (
         <View>
-            {/* ✅ Corrected Modal */}
             <Modal
                 animationType='slide'
                 transparent={true}  // 
@@ -47,12 +46,11 @@ const Item = ({ item }) => {
                 <Text> {item.name}</Text>
                 <Text> {item.price} EGY</Text>
 
-                {/* ✅ Fixed TouchableOpacity */}
                 <TouchableOpacity onPress={() => setPressed(!pressed)}>
                     <FontAwesome
                         style={[{ color: pressed ? 'red' : 'black' }, styles.heart]}
                         name={pressed ? 'heart' : 'heart-o'}
-                        size={20}  // ✅ Added size for consistency
+                        size={20}  
                     />
                 </TouchableOpacity>
             </Pressable>
