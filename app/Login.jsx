@@ -27,6 +27,7 @@ const Login = () => {
       if (userDoc.exists()) {
         Alert.alert("Success", "User logged in successfully");
         router.replace('/(tabs)');
+        router.push('/home');
       } else {
         setError('User not found.');
       }

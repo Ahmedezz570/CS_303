@@ -64,11 +64,12 @@ const styles = StyleSheet.create({
     item: {
         marginHorizontal: 5,
         marginTop: 15,
+        margin: 15,
         backgroundColor: 'lightgray',
         width: width * 0.4,
         paddingTop: 15,
-        paddingBottom: 5,
-        borderRadius: 10,
+        paddingBottom: 20,
+        borderRadius: 20,
         alignItems: 'center',
         position: 'relative'
     },
