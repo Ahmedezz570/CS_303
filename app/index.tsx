@@ -7,6 +7,7 @@ const WelcomeScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.push('/Login');
+      // router.push('./(tabs)/home');
     }, 3000); 
 
     return () => clearTimeout(timer);

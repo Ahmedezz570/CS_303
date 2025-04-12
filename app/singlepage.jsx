@@ -1,14 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import data from './data.js';
-import images from './images.js';
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
+import { db } from "../Firebase/Firebase";
+import { doc, getDoc } from 'firebase/firestore'; 
 
 const ProductDetails = () => {
-    const { id } = useLocalSearchParams(); 
     const navigation = useNavigation();
-    const product = data.find(item => item.id === parseInt(Array.isArray(id) ? id[0] : id));
+    const { id } = useLocalSearchParams(); 
+    const [product, setProduct] = useState({});
+    useEffect(() => {
+        const getProduct = async () => {
+          try {
+            const docRef = doc(db, "products", id);  
+            const docSnap = await getDoc(docRef);
+    
+            if (docSnap.exists()) {
+              setProduct(docSnap.data()); 
+            } else {
+              console.log("No such document!"); 
+            }
+          } catch (error) {
+            console.error("Error fetching product: ", error);  
+          }
+        };
+    
+        getProduct();
+      }, [id]);
 
     const handleFavorite = () => {
         Alert.alert("Favorite", `${product?.name} has been added to favorites!`);
@@ -29,11 +47,16 @@ const ProductDetails = () => {
                         <Ionicons name="heart" size={24} color="#333" />
                     </TouchableOpacity>
                 </View>
-
                 <Image 
-                    source={ images[product?.image] || require("../assets/images/R.jpeg")} 
-                    style={styles.image} 
-                />
+                        source={
+                            typeof product.image === 'string'
+                            ? { uri: product.image }
+                            : require("../assets/images/loading-buffering.gif")
+                        }  
+                        style={styles.image}
+                        />
+
+
                 <Text style={styles.name}>{product?.name}</Text>
                 <Text style={styles.description}>{product?.description}</Text>
                 <Text style={styles.price1}>{product?.price} EGP</Text>

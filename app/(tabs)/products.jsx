@@ -1,12 +1,31 @@
 import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import { useRouter } from 'expo-router';
-import daata from '../data.js';
-import images from '../images.js';
-
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../Firebase/Firebase.jsx";
 const Products = () => {
-  const [data, setData] = useState(daata);
+  const [data, setData] = useState([]); 
+  const [filteredData, setFilteredData] = useState([]);  
   const router = useRouter();
+
+  useEffect(() => {
+    const getProducts = async () => {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const productsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setData(productsData);
+      setFilteredData(productsData);  
+    };
+    getProducts();
+  }, []);
+  
+  const handleSearch = (text) => {
+    const filtered = data.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
+    setFilteredData(filtered);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
@@ -14,25 +33,24 @@ const Products = () => {
         <TextInput 
           placeholder="Search" 
           style={styles.searchInput}
-          onChangeText={(text) => 
-            setData(daata.filter(item => item.name.toLowerCase().includes(text.toLowerCase())))
-          }
+          onChangeText={handleSearch}  
         />
       </View>
       <FlatList
         numColumns={2}
-        data={data}
+        data={filteredData}  
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.card} 
-            onPress={() => router.push({ pathname: "/singlepage", params: { id: item.id } })}
-            >
+            onPress={() => router.push({ pathname: "/singlepage", params: { id: item.id } })} 
+          >
             <Image 
-              source={images[item.image] || require("../../assets/images/R.jpeg")} 
+              source={{ uri: item.image || require("../../assets/images/R.jpeg") }}  
               style={styles.image} 
             />
             <Text style={styles.name}>{item.name}</Text>
+
             <Text style={styles.price}>{item.price} EGP</Text>
           </TouchableOpacity>
         )}
