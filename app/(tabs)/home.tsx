@@ -7,6 +7,7 @@ import Item from '../item/item';
 import Data from '../data.js';  
 
 type Product = {
+  type :number,
   id: number;
   category: number;
   name: string;
@@ -35,7 +36,7 @@ const Home = () => {
     setFilteredData(filtered);
   };
   const topSelling = filteredData.reduce((acc, item) => {
-    if (!acc.some(existingItem => existingItem.name === item.name)) {
+    if (!acc.some(existingItem => existingItem.type === item.type)) {
       acc.push(item);  
     }
     return acc;

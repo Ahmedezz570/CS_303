@@ -1,5 +1,6 @@
 const data =[
   {
+    "type": 1,
     "id": 1,
     "category": 1,
     "name": " iPhone 13",
@@ -9,6 +10,7 @@ const data =[
   },
 
   {
+    "type": 1,
     "id": 2,
     "category": 1,
     "name": "Realme 11x 5G",
@@ -17,6 +19,7 @@ const data =[
     "image": "1311208428.png"
   },
   {
+    "type": 1,
     "id": 3,
     "category": 1,
     "name": "Samsung Galaxy A24",
@@ -25,6 +28,7 @@ const data =[
     "image": "1311208539.png"
   },
   {
+    "type": 1,
     "id": 4,
     "category": 1,
     "name": "Samsung Galaxy A05s",
@@ -34,6 +38,7 @@ const data =[
   },
 
   {
+    "type": 1,
     "id": 5,
     "category": 1,
     "name": "iPhone 14 Pro Max",
@@ -42,6 +47,7 @@ const data =[
     "image": "1311208653.png"
   },
   {
+    "type": 1,
     "id": 6,
     "category": 1,
     "name": "Samsung Galaxy A14",
@@ -50,6 +56,7 @@ const data =[
     "image": "1311208718.png"
   },
   {
+    "type": 1,
     "id": 7,
     "category": 1,
     "name": "Samsung Galaxy S23 ",
@@ -59,6 +66,7 @@ const data =[
   },
 
   {
+    "type": 1,
     "id": 8,
     "category": 1,
     "name": "iPhone 14 Pro Max",
@@ -67,6 +75,7 @@ const data =[
     "image": "i14.jpeg"
   },
   {
+    "type": 1,
     "id": 9,
     "category": 1,
     "name": "Xiaomi 13T Pro",
@@ -75,6 +84,7 @@ const data =[
     "image": "13t.jpeg"
   },
   {
+    "type": 1,
     "id": 10,
     "category": 1,
     "name": "Realme GT Neo 5",
@@ -83,6 +93,7 @@ const data =[
     "image": "rl.jpeg"
   },
   {
+    "type": 1,
     "id": 11,
     "category": 1,
     "name": "Samsung Galaxy A54",
@@ -91,6 +102,7 @@ const data =[
     "image": "sam.jpeg"
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 20,
@@ -99,6 +111,7 @@ const data =[
     image: 'ba1.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 21,
@@ -107,6 +120,7 @@ const data =[
     image: 'ba2.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 22,
@@ -115,6 +129,7 @@ const data =[
     image: 'ba3.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 23,
@@ -123,6 +138,7 @@ const data =[
     image: 'ba4.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 24,
@@ -131,6 +147,7 @@ const data =[
     image: 'ba5.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 25,
@@ -139,6 +156,7 @@ const data =[
     image: 'ba6.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 26,
@@ -147,6 +165,7 @@ const data =[
     image: 'ba7.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 27,
@@ -155,6 +174,7 @@ const data =[
     image: 'ba8.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 28,
@@ -163,6 +183,7 @@ const data =[
     image: 'ba9.png'
   },
   {
+    "type": 2,
     category: 3,
     name: 'pants',
     id: 29,
@@ -171,6 +192,7 @@ const data =[
     image: 'ba10.png'
   },
   {
+    "type": 3,
     category: 3,
     name: 'dress',
     id: 30,
@@ -179,6 +201,7 @@ const data =[
     image: 'dress1.png'
   },
   {
+    "type": 3,
     category: 3,
     name: 'dress',
     id: 31,
@@ -187,6 +210,7 @@ const data =[
     image: 'dress2.png'
   },
   {
+    "type": 3,
     category: 3,
     name: 'dress',
     id: 32,
@@ -195,6 +219,7 @@ const data =[
     image: 'dress3.png'
   },
   {
+    "type": 3,
     category: 3,
     name: 'dress',
     id: 33,
@@ -203,6 +228,7 @@ const data =[
     image: 'dress4.png'
   },
   {
+    "type": 4,
     category: 3,
     name: 'jacket',
     id: 34,
@@ -211,6 +237,7 @@ const data =[
     image: 'jacet1.png'
   },
   {
+    "type": 4,
     category: 3,
     name: 'jacket',
     id: 35,
@@ -219,6 +246,7 @@ const data =[
     image: 'jacet2.png'
   },
   {
+    "type": 4,
     category: 3,
     name: 'jacket',
     id: 36,
@@ -227,6 +255,7 @@ const data =[
     image: 'jacet3.png'
   },
   {
+    "type": 4,
     category: 3,
     name: 'jacket',
     id: 37,
@@ -235,6 +264,7 @@ const data =[
     image: 'jacet4.png'
   },
   {
+    "type": 4,
     category: 3,
     name: 'jacket',
     id: 38,
@@ -243,6 +273,7 @@ const data =[
     image: 'jacet5.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 39,
@@ -251,6 +282,7 @@ const data =[
     image: 'sw1.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 40,
@@ -259,6 +291,7 @@ const data =[
     image: 'sw2.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 41,
@@ -267,6 +300,7 @@ const data =[
     image: 'sw3.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 42,
@@ -275,6 +309,7 @@ const data =[
     image: 'sw4.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 44,
@@ -283,6 +318,7 @@ const data =[
     image: 'sw6.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 45,
@@ -291,6 +327,7 @@ const data =[
     image: 'sw7.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 46,
@@ -299,6 +336,7 @@ const data =[
     image: 'sw8.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 47,
@@ -307,6 +345,7 @@ const data =[
     image: 'sw9.png'
   },
   {
+    "type": 5,
     category: 3,
     name: 'sweatshirt',
     id: 48,
@@ -315,6 +354,7 @@ const data =[
     image: 'sw10.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 49,
@@ -323,6 +363,7 @@ const data =[
     image: 'te1.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 50,
@@ -331,6 +372,7 @@ const data =[
     image: 'te2.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 51,
@@ -339,6 +381,7 @@ const data =[
     image: 'te3.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 52,
@@ -347,6 +390,7 @@ const data =[
     image: 'te4.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 53,
@@ -355,6 +399,7 @@ const data =[
     image: 'te5.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 54,
@@ -363,6 +408,7 @@ const data =[
     image: 'te6.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 55,
@@ -371,6 +417,7 @@ const data =[
     image: 'te7.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 56,
@@ -379,6 +426,7 @@ const data =[
     image: 'te8.png'
   },
   {
+    type: 6,
     category: 3,
     name: 't-shirt',
     id: 57,
@@ -387,6 +435,7 @@ const data =[
     image: 'te9.png'
   },
   {
+    "type": 6,
     category: 3,
     name: 't-shirt',
     id: 58,
@@ -395,6 +444,7 @@ const data =[
     image: 'te10.png'
   },
   {
+    "type": 7,
     category: 3,
     name: 'wedding suit',
     id: 59,
@@ -403,6 +453,7 @@ const data =[
     image: 'we1.png'
   },
   {
+    "type": 7,
     category: 3,
     name: 'wedding suit',
     id: 60,
@@ -411,6 +462,7 @@ const data =[
     image: 'we2.png'
   },
   {
+    "type": 7,
     category: 3,
     name: 'wedding suit',
     id: 61,
@@ -419,6 +471,7 @@ const data =[
     image: 'we3.png'
   },
   {
+    "type": 7,
     category: 3,
     name: 'wedding suit',
     id: 63,
