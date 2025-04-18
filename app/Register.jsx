@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View , Alert} from 'react-native'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native'
 import React , {useState}from 'react'
 import { useRouter } from 'expo-router';
 import { auth, db } from '../Firebase/Firebase'; 
@@ -12,21 +12,21 @@ const Register= () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false); 
 
-    const router = useRouter();
+  const router = useRouter();
   
-
     const handleRegister = async () => {
       if (!username || !email || !password) {
         Alert.alert("Error", "Please fill all fields");
         return;
       }
-
-    
       if (password.length < 6) {
-        Alert.alert("Weak Password");
+        Alert.alert("Weak Password", "Password must be at least 6 characters.");
         return;
       }
+
+      setLoading(true);
     
       try {
         const createUser = await createUserWithEmailAndPassword(auth, email, password);
@@ -46,6 +46,7 @@ const Register= () => {
       } catch (error) {
         Alert.alert("Registration Error", error.message);
       }
+      setLoading(false);
     }
     
     
@@ -83,6 +84,13 @@ const Register= () => {
 
           </TouchableOpacity>
         </View>
+
+        {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Creating your account...</Text>
+        </View>
+      )}
       </View>
 
     </View>
@@ -161,6 +169,23 @@ fl:{
   justifyContent: 'flex-start', 
   alignItems: 'center',
   width: '100%',
+},
+loadingOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 999,
+},
+loadingText: {
+  marginTop: 10,
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
 },
 
 });

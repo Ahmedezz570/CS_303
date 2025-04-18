@@ -1,4 +1,4 @@
-import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View,ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -9,15 +9,16 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const signin = async () => {
     setError('');
-
     if (!email || !password) {
       setError('Please fill all fields');
       return;
     }
+    setLoading(true);
 
     try {
       const getUser = await signInWithEmailAndPassword(auth, email, password);
@@ -36,6 +37,7 @@ const Login = () => {
       setError('Invalid email or password.');
       console.error(error.message);
     }
+    setLoading(false);
   }
 
   const reg = () => {
@@ -94,6 +96,13 @@ const Login = () => {
 
         </TouchableOpacity>
       </View>
+
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Please wait...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -213,7 +222,22 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
 
   },
-
-
-
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
+
