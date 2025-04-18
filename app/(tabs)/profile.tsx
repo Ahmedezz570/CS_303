@@ -3,12 +3,9 @@ import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { auth, getUserData } from '../../Firebase/Firebase';
-import MiniAlert from '../(ProfileTabs)/MiniAlert';
 
 const Profile = () => {
   const [userData, setUserData] = useState<any>(null);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [alertType, setAlertType] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -26,17 +23,8 @@ const Profile = () => {
   return (
     <>
       <Stack.Screen name="Profile" options={{ headerShown: false }} />
-      {
-        alertMessage && (
-          <MiniAlert
-            message={alertMessage}
-            type={alertType}
-            onHide={() => setAlertMessage(null)}
-          />
-        )
-      }
       <View style={styles.container}>
-        <Image source={userData?.image ? { uri: userData?.image } : { uri: "https://randomuser.me/api/portraits/men/1.jpg" }} style={styles.logo} />
+        <Image source={{ uri: userData?.image }} style={styles.logo} />
 
         <View style={styles.infobox}>
           <View style={styles.info}>
@@ -65,6 +53,7 @@ const Profile = () => {
           </View>
         </View>
 
+        {/* Other profile tabs */}
         <TouchableOpacity
           style={styles.profiletabs}
           onPress={() => {
@@ -155,6 +144,7 @@ const Profile = () => {
           </View>
         </TouchableOpacity>
 
+        {/* Sign Out Button */}
         <View
           style={{
             flexGrow: 1,
@@ -167,11 +157,8 @@ const Profile = () => {
             style={styles.out}
             onPress={() => {
               auth.signOut();
-              setAlertMessage("باي باي 👋 \nهتوحشنا 🤍");
-              setAlertType("error");
-              setTimeout(() => {
-                router.replace("../Login");
-              }, 3000);
+              alert("Signed Out Successfully");
+              router.push('/Login');
             }}
             activeOpacity={0.4}
           >

@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db,getUserData } from '../Firebase/Firebase';
+import { auth, db } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -26,17 +26,9 @@ const Login = () => {
       const userDoc = await getDoc(doc(db, "Users", user.uid));
 
       if (userDoc.exists()) {
-        const data = await getUserData(user.uid);
-        if (data?.isAdmin === true) {
-          Alert.alert("Success", "Welcome Admin");
-          router.replace('./Admintabs');
-          router.push('./Admintabs/Admin');
-        }
-        else {
-          Alert.alert("Success", "User logged in successfully");
-          router.replace('/(tabs)');
-          router.push('/home');
-        }
+        Alert.alert("Success", "User logged in successfully");
+        router.replace('/(tabs)');
+        router.push('/home');
       } else {
         setError('User not found.');
       }
