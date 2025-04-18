@@ -5,7 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { auth, getUserData } from '../../Firebase/Firebase';
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../Firebase/Firebase";
-import { updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import MiniAlert from '../(ProfileTabs)/MiniAlert';
+
 
 const editprofile = () => {
   const [image, setImage] = useState<string | null>(null);
@@ -30,6 +31,9 @@ const editprofile = () => {
   const [email, setEmail] = useState<string | null>(null);
   const [num, setNum] = useState<string | null>(null);
   const [password, setPassword] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+  const IMGBB_API_KEY = "5f368fdc294d3cd3ddc0b0e9297a10fb";
 
 
 
@@ -44,11 +48,36 @@ const editprofile = () => {
 
     fetchUserData();
   }, []);
-
+  const uploadImageToImgbb = async (uri: string) => {
+    const formData = new FormData();
+    formData.append("image", {
+      uri,
+      type: "image/jpeg",
+      name: "profile.jpg",
+    } as any);
+  
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  
+    const data = await response.json();
+    return data.data.url;
+  };
+  
   async function Update() {
     const currentUser = auth.currentUser;
     if (currentUser) {
       const docRef = doc(db, "Users", currentUser?.uid);
+      if (image) {
+      const imageUrl = await uploadImageToImgbb(image);
+      await updateDoc(docRef, {
+        image: imageUrl,
+      });
+    }
       if (username != null || "") {
         await updateDoc(docRef, {
           username: username,
@@ -64,35 +93,32 @@ const editprofile = () => {
           fullname: fullname,
         });
       }
-      if (email != null || "") {
-        if (password != null || "") {
-          await updateDoc(docRef, {
-            email: email,
-          });
-          updateEmail(currentUser, String(email)).then(() => { }).catch((error) => {
-            if (error.code === 'auth/requires-recent-login') {
-              const credential = EmailAuthProvider.credential(String(auth.currentUser?.email), String(password));
-              reauthenticateWithCredential(currentUser, credential).then(() => {
-                updateEmail(currentUser, String(email)).then(() => { })
-              })
-            }
-          });
-        }
-        else {
-          alert("Please Enter Your Password");
-        }
-      }
-      alert("Thanks For Updates ✨")
-      router.push("../(tabs)/profile")
+      setAlertMessage("تم تحديث البيانات بنجاح");
+      setAlertType("success");
+      setTimeout(() => {
+        router.replace("../(tabs)/profile");
+      }, 3000);
     } else {
-      alert("No user is currently logged in.");
-      router.push("../Login")
+      setAlertMessage("لا يوجد مستخدم مسجل الدخول حاليا");
+      setAlertType("error");
+      setTimeout(() => {
+        router.replace("../Login");
+      }, 3000);
     }
   }
 
   return (
     <>
       <Stack.Screen name="address" options={{ headerShown: false, }} />
+      {
+        alertMessage && (
+          <MiniAlert
+            message={alertMessage}
+            type={alertType}
+            onHide={() => setAlertMessage(null)}
+          />
+        )
+      }
       <View style={styles.container}>
         <TouchableOpacity style={{ position: "absolute", top: 40, left: 30 }} onPress={() => { router.push('../(tabs)/profile') }}>
           <Image source={require('../../assets/images/backbutton.png')} style={styles.back} />
@@ -124,19 +150,6 @@ const editprofile = () => {
 
 
           </View>
-        </View>
-
-        <View style={{ position: "absolute", width: "97%", top: 415, alignItems: "flex-start", display: 'flex', flexDirection: 'row', justifyContent: "space-around", borderWidth: 2, borderColor: "black", borderRadius: 10, padding: 5 }}>
-          <View>
-            <Text style={styles.text}> Email</Text>
-            <TextInput style={styles.inputbox} placeholder={String(auth.currentUser?.email).toLowerCase()} keyboardType="email-address" onChangeText={(text) => { setEmail(text); }} />
-          </View>
-
-          <View>
-            <Text style={styles.text}> *Current Password</Text>
-            <TextInput style={styles.inputbox} placeholder='✪✪✪✪✪✪✪✪✪✪' keyboardType="visible-password" onChangeText={(text) => { setPassword(text); }} />
-          </View>
-
         </View>
 
         <TouchableOpacity onPress={() => { Update() }} style={{ position: 'absolute', top: Dimensions.get('window').height - 120 }}>
