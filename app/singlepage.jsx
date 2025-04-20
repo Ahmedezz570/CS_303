@@ -4,7 +4,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import Ionicons from 'react-native-vector-icons/Ionicons'; 
 import { db } from "../Firebase/Firebase";
 import { doc, getDoc } from 'firebase/firestore'; 
-
+import Review from './Review'
 const ProductDetails = () => {
     const navigation = useNavigation();
     const { id } = useLocalSearchParams(); 
@@ -69,6 +69,7 @@ const ProductDetails = () => {
                     <Text style={styles.text}>Add to cart</Text>
                 </TouchableOpacity>  
             </View>
+          <Review/>
         </View>
     );
 };
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
     },
     price1: {
         fontSize: 20,
-        color: 'black',
+        color: 'green',
         marginVertical: '1%',
         textAlign: 'center',
     },
@@ -131,8 +132,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
-        paddingVertical: 15,
+        paddingVertical: 3,
+        borderRadius:30,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
@@ -151,8 +152,8 @@ const styles = StyleSheet.create({
         width: '90%',
     },
     price: {
-        fontSize: 16,
-        color: '#555',
+        fontSize: 19,
+        color: '#333',
         fontWeight: 'bold',
     },
     text: {

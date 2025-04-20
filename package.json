@@ -38,7 +38,9 @@
     "react-native-toast-message": "^2.3.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.19.13",
-    "expo-linear-gradient": "~14.0.2"
+    "expo-linear-gradient": "~14.0.2",
+    "expo-notifications": "~0.29.14",
+    "expo-device": "~7.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
