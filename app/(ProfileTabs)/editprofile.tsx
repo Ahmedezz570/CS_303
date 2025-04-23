@@ -93,13 +93,13 @@ const editprofile = () => {
           fullname: fullname,
         });
       }
-      setAlertMessage("تم تحديث البيانات بنجاح");
+      setAlertMessage("update successfully");
       setAlertType("success");
       setTimeout(() => {
         router.replace("../(tabs)/profile");
       }, 3000);
     } else {
-      setAlertMessage("لا يوجد مستخدم مسجل الدخول حاليا");
+      setAlertMessage("no user is currently logged in");
       setAlertType("error");
       setTimeout(() => {
         router.replace("../Login");

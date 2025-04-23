@@ -167,7 +167,7 @@ const Profile = () => {
             style={styles.out}
             onPress={() => {
               auth.signOut();
-              setAlertMessage("باي باي 👋 \nهتوحشنا 🤍");
+              setAlertMessage("Bye Bye 👋 \nWe will miss you 🤍");
               setAlertType("error");
               setTimeout(() => {
                 router.replace("../Login");
