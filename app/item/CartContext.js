@@ -1,4 +1,3 @@
-// انا عملت دي عشان المفروض اشغل الكارت بحيث المنتجات تكون باينه في المشروع كله ويعرف يباصي للكارت بس لسه مش شغاله 
 import React, { createContext, useState, useContext } from 'react';
 
 const CartContext = createContext();
@@ -7,7 +6,7 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
   const addToCart = (item) => {
-    setCart((prevCart) => [...prevCart, item]);
+    setCart((prevCart) => [...prevCart, { ...item, quantity: item.quantity || 1 }]);
   };
 
   const removeFromCart = (id) => {
