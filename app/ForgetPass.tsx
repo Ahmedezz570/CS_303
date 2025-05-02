@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../Firebase/Firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-
+import { Ionicons } from '@expo/vector-icons';
 const ForgetPass = () => {
   const router = useRouter();
 
@@ -15,7 +15,7 @@ const ForgetPass = () => {
       Alert.alert("Error", "Please enter your email");
       return;
     }
-    setLoading(true); // بدأ التحميل
+    setLoading(true); 
 
     try {
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
@@ -29,14 +29,13 @@ const ForgetPass = () => {
         Alert.alert("Error", "Email doesn't exist");
       }
     } catch (err) {
-      // console.error('❌ Error sending reset email:', err.message);
      if(err.message==="Firebase: Error (auth/invalid-email)."){
       Alert.alert("Error","wrong format of email");}
       else{
         Alert.alert("Error",err.message);
       }
     } finally {
-      setLoading(false); // انتهاء التحميل سواء بنجاح أو بخطأ
+      setLoading(false); 
     }
   };
 
@@ -48,7 +47,7 @@ const ForgetPass = () => {
     <View style={styles.fl}>
       <View style={styles.container}>
         <TouchableOpacity style={styles.backbut} onPress={back}>
-          <Text style={{ textAlign: "center" }}>&lt;</Text>
+        <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Forgot Password</Text>
         <TextInput placeholder="Email Address" style={styles.input} value={email}
@@ -74,7 +73,7 @@ const styles = StyleSheet.create({
     width: '95%',
     height: 53,
     borderRadius: 100,
-    backgroundColor: 'rgb(243, 155, 83)',
+    backgroundColor: 'rgb(247, 207, 174)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Dimensions.get('window').height * 0.01,
@@ -101,13 +100,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   backbut: {
-    paddingTop: 5,
-    marginLeft: '2.5%',
-    alignSelf: "flex-start",
-    width: 30,
-    height: 30,
-    borderRadius: 50,
-    backgroundColor: 'rgb(231, 227, 227)',
+    paddingTop: 4,
+    paddingLeft:5, 
+    marginLeft:'2.5%',
+     alignSelf:"flex-start",
+     width:35,
+     height:35,
+     borderRadius:50,
+     backgroundColor:'rgb(231, 227, 227)',
   },
   fl: {
     flex: 1,

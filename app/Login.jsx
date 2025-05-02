@@ -89,12 +89,7 @@ const Login = () => {
 
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.button1a} >
-          <FontAwesome name='apple' size={30} style={styles.icon}></FontAwesome>
-
-          <Text style={styles.button1text}>Continue With Apple</Text>
-
-        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.button1} >
           <FontAwesome name='google' size={30} style={styles.icon}></FontAwesome>
 
@@ -150,7 +145,7 @@ const styles = StyleSheet.create({
     width: '95%',
     height: 53,
     borderRadius: 100,
-    backgroundColor: 'rgb(243, 155, 83)',
+    backgroundColor: 'rgb(247, 207, 174)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Dimensions.get('window').height * 0.01,
