@@ -138,12 +138,11 @@ const ProductDetails = () => {
                                 style={{ marginRight: 2 }}
                             />
                         ))}
-                        <Text style={styles.ratingText}>(4.0)</Text>
                     </View>
                 </View>
 
                 <View style={styles.descriptionContainer}>
-                    <Text style={styles.sectionTitle}>Product Details</Text>
+                    <Text style={styles.sectionTitle}>Details</Text>
 
                     {descriptionItems.length > 0 ? (
                         descriptionItems.map((item, index) => (
@@ -162,6 +161,7 @@ const ProductDetails = () => {
                         <Text style={styles.description}>{product?.description}</Text>
                     )}
                 </View>
+                <Review productId={id} />
             </ScrollView>
 
             <View style={styles.footer}>
@@ -176,7 +176,6 @@ const ProductDetails = () => {
                     </View>
                 </TouchableOpacity>
             </View>
-            <Review />
         </View>
     );
 };
