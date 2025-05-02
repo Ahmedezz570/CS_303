@@ -16,6 +16,8 @@ const Login = () => {
     setError('');
     if (!email || !password) {
       setError('Please fill all fields');
+      Alert.alert("Error", "please write email and password");
+
       return;
     }
     setLoading(true);
@@ -39,11 +41,13 @@ const Login = () => {
         }
       } else {
         setError('User not found.');
+      Alert.alert("Error","wrong Email or password")
       }
 
     } catch (error) {
       setError('Invalid email or password.');
-      console.error(error.message);
+      Alert.alert("Error","wrong Email or password")
+      Alert.alert("Error","wrong Email or password")
     }
     setLoading(false);
   }
