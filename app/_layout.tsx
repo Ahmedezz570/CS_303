@@ -13,6 +13,7 @@ const Layout = () => {
         <Stack.Screen name="products" />
         <Stack.Screen name="Admintabs" options={{ headerShown: false }} />
         <Stack.Screen name="Search" options={{ headerShown: false }} />
+        <Stack.Screen name="cart" options={{ headerShown: false }} />
         <Stack.Screen name="singlepage" options={{ headerShown: false }} />
         <Stack.Screen name="Categories/SeeAllCategories" options={{ title: "back" }} />
       </Stack>

@@ -4,15 +4,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
-import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 
 const AddProduct = () => {
-  const router = useRouter();
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const currentUser = auth.currentUser;
-  console.log('Current User:', currentUser.email);
   const [productDetails, setProductDetails] = useState({
     name: '',
     image: '',
@@ -23,40 +20,63 @@ const AddProduct = () => {
     AddedBy: currentUser.email,
   });
 
-  const pickAndUploadImage = async () => {
+  const uploadImageToCloudinary = async (uri) => {
+    const formData = new FormData();
+    formData.append('file', {
+      uri,
+      type: 'image/jpeg',
+      name: 'upload.jpg',
+    });
+    formData.append('upload_preset', 'photos');
+
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dtxvpdxsb/image/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      setImage(data.secure_url);
+      setProductDetails({ ...productDetails, image: data.secure_url });
+    } catch (error) {
+      console.log('Upload error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pickImageFromLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
-      base64: false,
     });
 
     if (!result.canceled) {
+      setLoading(true);
       const uri = result.assets[0].uri;
-      const formData = new FormData();
+      await uploadImageToCloudinary(uri);
+    }
+  };
 
-      formData.append('file', {
-        uri,
-        type: 'image/jpeg',
-        name: 'upload.jpg',
-      });
+  const takePhotoWithCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
-      formData.append('upload_preset', 'photos');
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'You need to allow camera access to take photos.');
+      return;
+    }
 
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
 
-      try {
-        const res = await fetch('https://api.cloudinary.com/v1_1/dtxvpdxsb/image/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await res.json();
-        setImage(data.secure_url);
-        setProductDetails({ ...productDetails, image: data.secure_url });
-        setLoading(false);
-      } catch (error) {
-        console.log('Upload error:', error);
-
-      }
+    if (!result.canceled) {
+      setLoading(true);
+      const uri = result.assets[0].uri;
+      await uploadImageToCloudinary(uri);
     }
   };
 
@@ -69,9 +89,8 @@ const AddProduct = () => {
       Alert.alert("Image Required", "Please upload an image before submitting.");
       return;
     }
-    setLoading(true)
+    setLoading(true);
     try {
-
       const newProduct = { ...productDetails };
       await addDoc(collection(db, 'products'), newProduct);
 
@@ -148,17 +167,34 @@ const AddProduct = () => {
         placeholder="Enter here"
       />
 
-      <TouchableOpacity onPress={pickAndUploadImage} style={styles.imagePicker}>
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.image}
-          />
-        ) : (
-          <FontAwesome name="cloud-upload" size={50} color="#aaa" />
-        )}
-      </TouchableOpacity>
+      {image ? (
+        <View style={{ alignItems: 'center', marginTop: 15 }}>
+          <View>
+            <Image source={{ uri: image }} style={styles.image} />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                setImage(null);
+                setProductDetails({ ...productDetails, image: '' });
+              }}
+            >
+              <FontAwesome name="close" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.imageButtonsContainer}>
+          <TouchableOpacity onPress={pickImageFromLibrary} style={styles.imagePicker}>
+            <FontAwesome name="photo" size={30} color="#aaa" />
+            <Text style={styles.optionText}>From Gallery</Text>
+          </TouchableOpacity>
 
+          <TouchableOpacity onPress={takePhotoWithCamera} style={styles.imagePicker}>
+            <FontAwesome name="camera" size={30} color="#aaa" />
+            <Text style={styles.optionText}>Take Photo</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity onPress={addButton} style={styles.button} disabled={loading}>
         {loading ? (
@@ -167,7 +203,6 @@ const AddProduct = () => {
           <Text style={styles.buttonText}>Add</Text>
         )}
       </TouchableOpacity>
-
     </View>
   );
 };
@@ -191,14 +226,25 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 5,
   },
-  imagePicker: {
-    alignItems: 'center',
+  imageButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     marginTop: 15,
   },
+  imagePicker: {
+    alignItems: 'center',
+  },
+  optionText: {
+    marginTop: 5,
+    color: '#555',
+    fontSize: 14,
+  },
   image: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     borderRadius: 10,
+    alignSelf: 'center',
+    marginTop: 15,
   },
   button: {
     backgroundColor: '#f5e1d2',
@@ -227,6 +273,15 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginTop: 5,
     justifyContent: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 15,
+    padding: 5,
+    zIndex: 1,
   },
 });
 

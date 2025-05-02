@@ -1,8 +1,8 @@
 import { View, Text,FlatList, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import images from '../images.js';
-import { useCart } from '../item/CartContext.js';
+import images from './images.js';
+import { useCart } from './item/CartContext.js';
 
 const CartScreen = () => {
   const router = useRouter();
