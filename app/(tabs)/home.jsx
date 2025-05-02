@@ -3,18 +3,18 @@ import { Stack,useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 import { FontAwesome6 } from '@expo/vector-icons';
-import Item from '../item/item';
+import Item from '../item/item.jsx';
 import Data from '../data.js';  
 
-type Product = {
-  type :number,
-  id: number;
-  category: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-};
+// type Product = {
+//   type :number,
+//   id: number;
+//   category: number;
+//   name: string;
+//   description: string;
+//   price: number;
+//   image: string;
+// };
 
 const categories = [
   { name: "Mobile", image: require("../../assets/images/1311208664.png") },
@@ -28,19 +28,9 @@ const categories = [
 
 const Home = () => {
   const [productData, setProductData] = useState(Data);
-  const [filteredData, setFilteredData] = useState<Product[]>(Data);  
+  
   const router = useRouter();
 
-  const handleSearch = (text: string) => {
-    const filtered = Data.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
-    setFilteredData(filtered);
-  };
-  const topSelling = filteredData.reduce((acc, item) => {
-    if (!acc.some(existingItem => existingItem.type === item.type)) {
-      acc.push(item);  
-    }
-    return acc;
-  }, [] as Product[]);
   
   return (
     <>
@@ -57,15 +47,16 @@ const Home = () => {
         </Pressable>
       </View>
 
-      <View style={styles.searchBar}>
+<TouchableOpacity  onPress={() => router.push('/Search')}>
+      <View style={styles.searchBar} >
         <FontAwesome name="search" size={20} style={styles.searchIcon} />
         <TextInput
           placeholder="Search"
           style={styles.input}
-          onChangeText={handleSearch} 
+          editable={false}
         />
       </View>
-
+      </TouchableOpacity>
       <View style={styles.row}>
         <Text style={styles.text}>all Categories</Text>
         <TouchableOpacity onPress={() => router.push('../Categories/SeeAllCategories')}>
@@ -92,7 +83,7 @@ const Home = () => {
       <Text style={styles.text}>Suggested for you</Text>
      
        <FlatList
-        data={topSelling} 
+        data={productData} 
         renderItem={({ item }) => <Item item={item} />}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -100,7 +91,7 @@ const Home = () => {
       <View>
         <Text style={styles.text}>Top Selling</Text>
         <FlatList
-          data={filteredData} 
+          data={productData} 
           renderItem={({ item }) => <Item item={item} />}
           horizontal
           showsHorizontalScrollIndicator={false}

@@ -4,7 +4,28 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={{headerShown: false}}>
+    <Tabs
+         screenOptions={{
+           headerShown: false,
+           tabBarActiveTintColor: '#007AFF', 
+           tabBarInactiveTintColor: '#8e8e93', 
+           tabBarStyle: {
+             backgroundColor: '#ffffff', 
+             borderTopLeftRadius: 20,
+             borderTopRightRadius: 20,
+             shadowColor: '#000',
+             shadowOffset: { width: 0, height: -3 },
+             shadowOpacity: 0.1,
+             shadowRadius: 5,
+             elevation: 10,
+             height: 53,
+           },
+           tabBarLabelStyle: {
+             fontSize: 12,
+             fontWeight: '600',
+           },
+         }}
+       >
     <Tabs.Screen name='home' options={{
       title: 'Home',
       tabBarIcon: ({color}) => (
