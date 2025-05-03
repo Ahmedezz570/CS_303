@@ -1,10 +1,11 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View , Alert} from 'react-native'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native'
 import React , {useState}from 'react'
 import { useRouter } from 'expo-router';
 import { auth, db } from '../Firebase/Firebase'; 
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
+import { Ionicons } from '@expo/vector-icons';
 
 
 const Register= () => { 
@@ -12,21 +13,21 @@ const Register= () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false); 
 
-    const router = useRouter();
+  const router = useRouter();
   
-
     const handleRegister = async () => {
       if (!username || !email || !password) {
         Alert.alert("Error", "Please fill all fields");
         return;
       }
-
-    
       if (password.length < 6) {
-        Alert.alert("Weak Password");
+        Alert.alert("Weak Password", "Password must be at least 6 characters.");
         return;
       }
+
+      setLoading(true);
     
       try {
         const createUser = await createUserWithEmailAndPassword(auth, email, password);
@@ -47,6 +48,7 @@ const Register= () => {
         Alert.alert("Registration Error", error.message);
         Alert.alert("Error", "Failed to sign in with Google.");
       }
+      setLoading(false);
     }
     
     
@@ -65,7 +67,7 @@ const Register= () => {
 
       <View style={styles.container}>
         <TouchableOpacity style={styles.backbut} onPress={back}>
-          <Text style={{ textAlign: "center" }}>&lt;</Text>
+        <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Create Account</Text>
         <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={setUsername}/>
@@ -84,6 +86,13 @@ const Register= () => {
 
           </TouchableOpacity>
         </View>
+
+        {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Creating your account...</Text>
+        </View>
+      )}
       </View>
 
     </View>
@@ -121,7 +130,7 @@ const styles = StyleSheet.create({
     width: '95%',
     height: 53,
     borderRadius: 100,
-    backgroundColor: 'rgb(243, 155, 83)',
+    backgroundColor: 'rgb(247, 207, 174)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Dimensions.get('window').height * 0.01,
@@ -149,11 +158,12 @@ semif:{
   marginTop: Dimensions.get('window').height*0.01,
 },
 backbut:{
- paddingTop: 5,
-  marginLeft:'2.5%',
+ paddingTop: 4,
+ paddingLeft:5, 
+ marginLeft:'2.5%',
   alignSelf:"flex-start",
-  width:30,
-  height:30,
+  width:35,
+  height:35,
   borderRadius:50,
   backgroundColor:'rgb(231, 227, 227)',
 },
@@ -162,6 +172,23 @@ fl:{
   justifyContent: 'flex-start', 
   alignItems: 'center',
   width: '100%',
+},
+loadingOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 999,
+},
+loadingText: {
+  marginTop: 10,
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
 },
 
 });

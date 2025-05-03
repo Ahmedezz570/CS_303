@@ -1,27 +1,23 @@
 import { Stack } from 'expo-router';
 import React from 'react';
+import { CartProvider } from './item/CartContext';
 const Layout = () => {
   return (
-    <Stack>
-      <Stack.Screen name="tabs"  options={{headerShown:false}}/>
-      <Stack.Screen name="Login"  options={{headerShown:false}}/>
-      <Stack.Screen name="Register"   options={{headerShown:false}}/>
-     <Stack.Screen name="ForgetPass" options={{headerShown:false}} />
-      {/* <Stack.Screen name="About"  /> */}
-
-      <Stack.Screen name="singlepage"   options={{ headerShown: false }} />
-      <Stack.Screen name="Categories/SeeAllCategories" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/pants" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/mobile" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/dresses" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/jackets" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/t-shirt" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/sweatshirt" options={{ title: "back" }} />
-      <Stack.Screen name="Categories/wedding" options={{ title: "back" }} />
-      <Stack.Screen name="Preview"  />
-      <Stack.Screen name="UpdateItem"  />
-
+    <CartProvider>
+      <Stack>
+        <Stack.Screen name="home" options={{ headerShown: true }} />
+        <Stack.Screen name="Login" options={{ headerShown: false }} />
+        <Stack.Screen name="Register" options={{ headerShown: false }} />
+        <Stack.Screen name="ForgetPass" options={{ headerShown: false }} />
+        <Stack.Screen name="About" />
+        <Stack.Screen name="products" />
+        <Stack.Screen name="Admintabs" options={{ headerShown: false }} />
+        <Stack.Screen name="Search" options={{ headerShown: false }} />
+        <Stack.Screen name="cart" options={{ headerShown: false }} />
+        <Stack.Screen name="singlepage" options={{ headerShown: false }} />
+        <Stack.Screen name="Categories/SeeAllCategories" options={{ title: "back" }} />
       </Stack>
+    </CartProvider>
   );
 }
 

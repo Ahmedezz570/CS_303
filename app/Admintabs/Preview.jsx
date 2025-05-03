@@ -2,7 +2,7 @@ import { View, Text, TextInput, StyleSheet, FlatList, Image, Pressable, Alert, M
 import React, { useEffect, useState } from 'react'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { db } from '../Firebase/Firebase'
+import { db } from '../../Firebase/Firebase'
 import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { router } from 'expo-router';
 

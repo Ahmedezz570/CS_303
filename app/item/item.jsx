@@ -1,33 +1,36 @@
-import { View, Text, Image, StyleSheet, Dimensions, Pressable, TouchableOpacity, Modal } from 'react-native';
 import React, { useState } from 'react';
-import images from '../images';
-import { router } from 'expo-router';
+import { View, Text, Image, TouchableOpacity, Modal, Pressable, StyleSheet } from 'react-native';
+import { useCart } from './CartContext'; 
+import images from '../images';  
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
+import { router } from 'expo-router';
+import { Dimensions } from 'react-native';
 const { width } = Dimensions.get("window");
 
 const Item = ({ item }) => {
     const [pressed, setPressed] = useState(false);
-    const [modelVisable, setModelVisable] = useState(false);
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const { addToCart } = useCart(); 
+
+    const handleAddToCart = () => {
+        addToCart(item);  
+        setModalVisible(false);
+        alert("Added to cart");
+    };
 
     return (
         <View>
             <Modal
                 animationType='slide'
-                transparent={true}  // 
-                visible={modelVisable}
-                onRequestClose={() => setModelVisable(!modelVisable)}
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(!modalVisible)}
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalText}>Do you want to add to your cart </Text>
-                        <Pressable
-                            style={[styles.button, styles.buttonClose]}
-                            onPress={() => {
-                                alert("Added ✌️")
-                                setModelVisable(!modelVisable)
-                            }}
-                        >
+                        <Text style={styles.modalText}>Do you want to add to your cart?</Text>
+                        <Pressable style={[styles.button, styles.buttonClose]} onPress={handleAddToCart}>
                             <Text style={styles.textStyle}>Add to cart</Text>
                         </Pressable>
                     </View>
@@ -37,8 +40,10 @@ const Item = ({ item }) => {
             <Pressable
                 style={styles.item}
                 onPress={() => router.push('/singlepage')}
-                onLongPress={() => setModelVisable(true)}>
+                onLongPress={() => setModalVisible(true)}
+            >
                 <Image
+                
                     source={images[item.image] || require('../../assets/images/1311208428.png')}
                     style={{ width: 100, height: 100 }}
                     resizeMode="contain"
@@ -46,11 +51,11 @@ const Item = ({ item }) => {
                 <Text> {item.name}</Text>
                 <Text> {item.price} EGY</Text>
 
-                <TouchableOpacity onPress={() => setPressed(!pressed)}>
+                <TouchableOpacity onPress={() => setPressed(!pressed)} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
                     <FontAwesome
                         style={[{ color: pressed ? 'red' : 'black' }, styles.heart]}
                         name={pressed ? 'heart' : 'heart-o'}
-                        size={20}  
+                        size={20}
                     />
                 </TouchableOpacity>
             </Pressable>
@@ -77,8 +82,8 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         padding: '4%',
         position: 'absolute',
-        bottom: -7,
-        left: 50
+        bottom: 120,
+        right: 208,
     },
     centeredView: {
         flex: 1,

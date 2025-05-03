@@ -6,10 +6,9 @@ const WelcomeScreen = () => {
   const router = useRouter();
   useEffect(() => {
     const timer = setTimeout(() => {
-      // router.push({pathname:'UpdateItem' , params :{id:'NPsqKKZ0Y6yokPLvErQK' }});
-      router.push('Preview');
+      router.push('/Admintabs');
       // router.push('./(tabs)/home');
-    }, 0); 
+    }, 3000); 
 
     return () => clearTimeout(timer);
   }, []);

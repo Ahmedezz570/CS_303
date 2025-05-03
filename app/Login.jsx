@@ -1,23 +1,26 @@
-import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../Firebase/Firebase';
+import { auth, db, getUserData } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const signin = async () => {
     setError('');
-
     if (!email || !password) {
       setError('Please fill all fields');
+      Alert.alert("Error", "please write email and password");
+
       return;
     }
+    setLoading(true);
 
     try {
       const getUser = await signInWithEmailAndPassword(auth, email, password);
@@ -25,17 +28,28 @@ const Login = () => {
       const userDoc = await getDoc(doc(db, "Users", user.uid));
 
       if (userDoc.exists()) {
-        Alert.alert("Success", "User logged in successfully");
-        router.replace('/(tabs)');
-        router.push('/home');
+        const data = await getUserData(user.uid);
+        if (data?.isAdmin === true) {
+          Alert.alert("Success", "Welcome Admin");
+          router.replace('./Admintabs');
+          router.push('./Admintabs/Admin');
+        }
+        else {
+          Alert.alert("Success", "User logged in successfully");
+          router.replace('/(tabs)');
+          router.push('/home');
+        }
       } else {
         setError('User not found.');
+      Alert.alert("Error","wrong Email or password")
       }
 
     } catch (error) {
       setError('Invalid email or password.');
-      console.error(error.message);
+      Alert.alert("Error","wrong Email or password")
+      Alert.alert("Error","wrong Email or password")
     }
+    setLoading(false);
   }
 
   const reg = () => {
@@ -75,12 +89,7 @@ const Login = () => {
 
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.button1a} >
-          <FontAwesome name='apple' size={30} style={styles.icon}></FontAwesome>
-
-          <Text style={styles.button1text}>Continue With Apple</Text>
-
-        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.button1} >
           <FontAwesome name='google' size={30} style={styles.icon}></FontAwesome>
 
@@ -94,6 +103,13 @@ const Login = () => {
 
         </TouchableOpacity>
       </View>
+
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Please wait...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -129,7 +145,7 @@ const styles = StyleSheet.create({
     width: '95%',
     height: 53,
     borderRadius: 100,
-    backgroundColor: 'rgb(243, 155, 83)',
+    backgroundColor: 'rgb(247, 207, 174)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Dimensions.get('window').height * 0.01,
@@ -213,7 +229,22 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
 
   },
-
-
-
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
+

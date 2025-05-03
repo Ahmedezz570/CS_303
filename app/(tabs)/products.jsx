@@ -29,7 +29,7 @@ const Products = () => {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <Text style={styles.title}>All Products</Text>
+        <Text style={styles.title}>Our Products</Text>
         <TextInput 
           placeholder="Search" 
           style={styles.searchInput}
@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     padding: '3%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
-    marginBottom: 10,
+    borderRadius: 30,
+    marginBottom: 5,
   },
   title: {
     fontSize: 15,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     color: 'black',
     height: 50,
     width: '90%',
-    borderWidth: 1,
+    borderWidth: 5,
     borderColor: '#000',
     marginBottom: '5%',
     paddingHorizontal: 10,
@@ -91,15 +91,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   card: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 18,
-    margin: 4,
+    backgroundColor: '#ffff',
+    borderRadius: 20,
+    margin: 1,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    width: '48%',
+    width: '49%',
     aspectRatio: 1,
     overflow: 'hidden',
   },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 16,
-    color: 'black',
+    color: 'green',
   },
 });
 
