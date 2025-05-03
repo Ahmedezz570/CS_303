@@ -39,7 +39,7 @@ const Item = ({ item }) => {
                 onPress={() => router.push('/singlepage')}
                 onLongPress={() => setModelVisable(true)}>
                 <Image
-                    source={images[item.id] || require('../../assets/images/1311208428.png')}
+                    source={images[item.image] || require('../../assets/images/1311208428.png')}
                     style={{ width: 100, height: 100 }}
                     resizeMode="contain"
                 />
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
         marginTop: 15,
         margin: 15,
-        backgroundColor: 'lightgray',
+        backgroundColor: 'white',
         width: width * 0.4,
         paddingTop: 15,
         paddingBottom: 20,
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     },
     heart: {
         fontSize: 15,
-        backgroundColor: 'white',
+        backgroundColor: 'lightgray',
         borderRadius: 50,
         padding: '4%',
         position: 'absolute',

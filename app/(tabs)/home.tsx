@@ -18,10 +18,10 @@ const categories = [
 ];
 const Home = () => {
   const [productData, setProductData] = useState(Data);
-  const [filteredData, setFilteredData] = useState(Data); // إضافة حالة للبيانات المفلترة
+  const [filteredData, setFilteredData] = useState(Data); 
   const router = useRouter();
 
-  // دالة البحث
+
   const handleSearch = (text: string) => {
     const filtered = Data.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
     setFilteredData(filtered);
@@ -45,7 +45,7 @@ const Home = () => {
         <TextInput
           placeholder="Search"
           style={styles.input}
-          onChangeText={handleSearch} // ربط دالة البحث مع الـ TextInput
+          onChangeText={handleSearch} 
         />
       </View>
 
@@ -165,8 +165,9 @@ const Home = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1, 
-    backgroundColor: '#fff',
+   backgroundColor: '#FAE5D3', 
   },
+
   icons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
