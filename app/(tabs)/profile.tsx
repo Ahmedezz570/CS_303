@@ -119,23 +119,7 @@ const Profile = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.profiletabs}
-          onPress={() => {
-            router.push('../(ProfileTabs)/Payment');
-          }}
-          activeOpacity={0.6}
-        >
-          <View style={{ display: "flex", flexDirection: "row" }}>
-            <Text style={styles.textb}>Payment</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
-        </TouchableOpacity>
+       
 
         <TouchableOpacity
           style={styles.profiletabs}
@@ -155,6 +139,23 @@ const Profile = () => {
           </View>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/About');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>About</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Image
+              source={require("../../assets/images/backtab.png")}
+              style={styles.backtab}
+            />
+          </View>
+        </TouchableOpacity>
         <View
           style={{
             flexGrow: 1,
@@ -163,7 +164,7 @@ const Profile = () => {
             alignItems: "center",
           }}
         >
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.out}
             onPress={() => {
               auth.signOut();
@@ -178,7 +179,7 @@ const Profile = () => {
             <Text style={{ fontSize: 20, color: "darkred", fontWeight: "bold" }}>
               Sign Out
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     </>
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAE5D3',
+    backgroundColor: 'white',
   },
   backtab: {
     width: 30,
