@@ -14,6 +14,7 @@ const HomePage = () => {
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
+      await AsyncStorage.removeItem('DataForUser');
       router.replace("/Login"); 
       Alert.alert("Logout successful");
     } catch (error) {
@@ -72,7 +73,7 @@ const HomePage = () => {
     <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
 
     <View style={styles.priceContainer}>
-      <Text style={styles.oldPrice}>{item.price} EGP</Text>
+      <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
       <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , randomDiscount))} EGP</Text>
     </View>
 

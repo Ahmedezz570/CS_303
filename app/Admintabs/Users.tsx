@@ -306,7 +306,7 @@ const Users = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAE5D3',
+        backgroundColor: 'white',
     },
     loadingContainer: {
         flex: 1,
