@@ -6,8 +6,8 @@ const WelcomeScreen = () => {
   const router = useRouter();
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/Admintabs');
-      // router.push('./(tabs)/home');
+      // router.push('/');
+      router.push('./(tabs)/home');
     }, 3000); 
 
     return () => clearTimeout(timer);
