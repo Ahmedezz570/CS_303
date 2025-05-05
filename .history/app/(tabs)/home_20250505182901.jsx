@@ -1,6 +1,6 @@
 import Icon from "react-native-vector-icons/Feather";
-import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, Pressable, Alert } from "react-native";
+import React , {useState , useEffect}from "react";
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity , Pressable, Alert} from "react-native";
 import { Stack, useRouter } from "expo-router";
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 24;
@@ -14,6 +14,7 @@ const HomePage = () => {
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
+      await AsyncStorage.removeItem('DataForUser');
       router.replace("/Login"); 
       Alert.alert("Logout successful");
     } catch (error) {
@@ -72,7 +73,7 @@ const HomePage = () => {
     <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
 
     <View style={styles.priceContainer}>
-      <Text style={styles.oldPrice}>{item.price} EGP</Text>
+      <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
       <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , randomDiscount))} EGP</Text>
     </View>
 
@@ -103,12 +104,13 @@ const HomePage = () => {
   };
   
   const Categories = [
-    { id : 1,name: "Mobile", image: "https://i.ibb.co/4ZhGCKn2/apple-iphone-16-pro-desert-1-3.jpg" },
-    { id : 2,name: "Computers", image:"https://i.ibb.co/xqvrtNZD/zh449-1.jpg" },
-    { id : 3,name: "TVs", image: "https://i.ibb.co/vvTrVWFD/tv556-1.jpg" },
-    { id : 4,name: "Men", image: "https://i.ibb.co/RGzqBrwk/1.jpg" },
-    {id : 5, name: "Women", image: "https://i.ibb.co/Kzr7MVxM/1.jpg" },
-    { id : 6,name: "Kids", image: "https://i.ibb.co/20TYN7Lz/1.jpg" },
+    { id : 1,name: "Mobile", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    { id : 2,name: "pants", image:"https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    { id : 3,name: "dress", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    { id : 4,name: "jacket", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    {id : 5, name: "t-shirt", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    { id : 6,name: "sweatshirt", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
+    { id : 7,name: "wedding", image: "https://i.ibb.co/TM3kvX7w/samsung-galaxy-a06-blue-1-1.jpg" },
   ];
   useEffect(() => {
     const checkStorage = async () => {
@@ -164,6 +166,7 @@ const HomePage = () => {
           />
         </View>
       </TouchableOpacity>
+
       
       <Text style={styles.sectionTitle}>Categories</Text>
       <FlatList
@@ -171,10 +174,8 @@ const HomePage = () => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
            <TouchableOpacity onPress={() => {
-           router.push({
-             pathname: "/DisplayCategories",
-             params: { title: item.name }
-           });
+           router.push(`/DispalyCategories?title=${item.name}`)
+          
            }}>
           <View style={styles.categoryItem}>
            
@@ -189,15 +190,16 @@ const HomePage = () => {
         contentContainerStyle={styles.listContainer}
       />
 
-  <View style={styles.imageContainer}>
-    <Image source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }} style={styles.bannerimage} />
-  </View>
+<View style={styles.imageContainer}>
+<Image source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }} style={styles.bannerimage} />
 
+</View>
       <Text style={styles.sectionTitle}>Top Selling</Text>
       <FlatList
         data={products}
         keyExtractor={(item) => item.docId.toString()}
-        renderItem={({ item }) => <Item item={item} />}
+
+  renderItem={({ item }) => <Item item={item} />}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
@@ -209,13 +211,13 @@ const HomePage = () => {
         data={products.slice(-5)}
         keyExtractor={(item) => item.docId.toString()}
         renderItem={({ item }) => (
+        
           <Item item={item} />
         )}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.newIn}
       />
-
       <Text style={styles.sectionTitle}>ٌRecommend For You </Text>
       <FlatList
         data={[...products].sort(() => Math.random() - 0.5).slice(0, 4)}
@@ -258,26 +260,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     marginBottom: 20,
-  },
-  featuredProductButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E91E63",
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  featuredButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 10,
   },
   icon: {
      marginRight: 10 
@@ -405,10 +387,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  priceContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
+
 });
 
 export default HomePage;
+
