@@ -46,7 +46,7 @@ const Products = () => {
             onPress={() => router.push({ pathname: "/singlepage", params: { id: item.id } })} 
           >
             <Image 
-              source={{ uri: item.image || require("../../assets/images/R.jpeg") }}  
+              source={{ uri: item.image || { uri: "https://randomuser.me/api/portraits/men/1.jpg" } }}  
               style={styles.image} 
             />
             <Text style={styles.name}>{item.name}</Text>

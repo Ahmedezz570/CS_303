@@ -1,17 +1,22 @@
 import { Stack, router } from 'expo-router';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
+import { Ionicons } from '@expo/vector-icons';
 
 const help = () => {
   return (
     <>
-    <Stack.Screen name="help" options={{headerShown:false}} />
-    <View style={styles.container}>
-        <TouchableOpacity style={{ position: "absolute", top: 70, left: 30 }} onPress={() => { router.push('../(tabs)/profile') }}>
-          <Image source={require('../../assets/images/backbutton.png')} style={styles.back} />
+      <Stack.Screen name="help" options={{ headerShown: false }} />
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => { router.back() }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back-circle-outline" size={36} color="#5D4037" />
         </TouchableOpacity>
-      <Text style={styles.text}>help</Text>
-    </View>
+        <Text style={styles.text}>help</Text>
+      </View>
     </>
   )
 }
@@ -33,6 +38,12 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 15,
+    top: 55,
+    zIndex: 10,
   },
 });
 export default help

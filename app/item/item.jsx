@@ -44,7 +44,7 @@ const Item = ({ item }) => {
             >
                 <Image
                 
-                    source={images[item.image] || require('../../assets/images/1311208428.png')}
+                    source={images[item.image] || { uri: "https://randomuser.me/api/portraits/men/1.jpg" }}
                     style={{ width: 100, height: 100 }}
                     resizeMode="contain"
                 />
