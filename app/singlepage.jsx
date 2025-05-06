@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } fr
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { auth, db, getUserData } from "../Firebase/Firebase";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove ,setDoc} from 'firebase/firestore';
+import { doc, getDoc,collection, updateDoc, arrayUnion, arrayRemove,increment ,setDoc} from 'firebase/firestore';
 import Review from './Review'
 import { getAuth } from 'firebase/auth';
 import { Stack,useRouter } from 'expo-router';
@@ -91,54 +91,36 @@ const ProductDetails = () => {
             Alert.alert("Error", "Could not update favorites. Please try again.");
         }
     };
-    const handleAddToCart = async () => {
-        const currentUser = getAuth().currentUser;
-    
-        if (!id) {
-            Alert.alert("Error", "Product ID is missing.");
-            return;
-        }
-    
-        const userDocRef = doc(db, 'Users', currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
-    
-        if (!docSnap.exists()) {
-            const cartItem = {
-                productId: id,
-                quantity: 1,
-            };
-            await setDoc(userDocRef, {
-                cart: [cartItem],
-            });
-        } else {
-            const userData = docSnap.data();
-            const cart = Array.isArray(userData.cart) ? userData.cart : [];
-            const existingItemIndex = cart.findIndex(item => item.productId === id);
-    
-            if (existingItemIndex === -1) {
-                const cartItem = {
-                    productId: id,
-                    quantity: 1,
-                };
-                await updateDoc(userDocRef, {
-                    cart: arrayUnion(cartItem),
-                });
-            } else {
-                const updatedCart = [...cart];
-                const existingItem = updatedCart[existingItemIndex];
-                const newItem = { ...existingItem, quantity: existingItem.quantity + 1 };
-    
-                updatedCart.splice(existingItemIndex, 1); 
-                updatedCart.push(newItem);
-    
-                await updateDoc(userDocRef, {
-                    cart: updatedCart,
-                });
-            }
-        }
-    
-        router.push('/cart');
-    };
+
+const handleAddToCart = async () => {
+  const currentUser = getAuth().currentUser;
+  if (!currentUser || !id) {
+    Alert.alert("Error", "User or Product ID is missing.");
+    return;
+  }
+
+  try {
+    const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', id);
+    const cartDocSnap = await getDoc(cartDocRef);
+
+    if (cartDocSnap.exists()) {
+      await updateDoc(cartDocRef, {
+        quantity: increment(1),
+      });
+    } else {
+      await setDoc(cartDocRef, {
+        productId: id,
+        quantity: 1,
+      });
+    }
+
+    router.push('/cart');
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    Alert.alert("Error", "Failed to add product to cart.");
+  }
+};
+
     
     const descriptionItems = parseDescription(product?.description);
 
