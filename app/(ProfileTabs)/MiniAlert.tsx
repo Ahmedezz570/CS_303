@@ -17,7 +17,6 @@ const MiniAlert: React.FC<MiniAlertProps> = ({ message, type, onHide }) => {
             duration: 400,
             useNativeDriver: true,
         }).start();
-
         const timer = setTimeout(() => {
             Animated.timing(translateY, {
                 toValue: -100,

@@ -29,6 +29,7 @@ const Login = () => {
 
       if (userDoc.exists()) {
         const data = await getUserData(user.uid);
+        console.log(data?.isAdmin);
         if (data?.isAdmin === true) {
           Alert.alert("Success", "Welcome Admin");
           router.replace('./Admintabs');

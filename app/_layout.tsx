@@ -14,6 +14,9 @@ const Layout = () => {
         <Stack.Screen name="Admintabs" options={{ headerShown: false }} />
         <Stack.Screen name="Search" options={{ headerShown: false }} />
         <Stack.Screen name="cart" options={{ headerShown: false }} />
+        <Stack.Screen name="(ProfileTabs)/About" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+         <Stack.Screen name="Settings" options={{ headerShown: false }} />
         <Stack.Screen name="singlepage" options={{ headerShown: false }} />
         <Stack.Screen name="Categories/SeeAllCategories" options={{ title: "back" }} />
       </Stack>

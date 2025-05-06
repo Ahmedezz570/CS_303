@@ -285,7 +285,7 @@ const orders = () => {
                 style={styles.shopButton}
                 onPress={() => {
                   animatePress();
-                  router.push('../(tabs)');
+                  router.push('../(tabs)/home');
                 }}
                 activeOpacity={0.7}
               >

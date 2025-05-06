@@ -157,7 +157,6 @@ const OrdersScreen = () => {
                     }
                 }
             }
-
             const productPromises = Array.from(productMap.keys()).map(async (productId) => {
                 try {
                     const productDoc = await getDoc(doc(db, "products", productId));

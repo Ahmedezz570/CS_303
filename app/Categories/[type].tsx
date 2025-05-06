@@ -1,8 +1,10 @@
-import { Stack,useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet } from "react-native";
-import Data from "../data"; 
-import images from "../images"; 
+import Data from "../data";
+import images from "../images";
+import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 type Product = {
   id: number;
   name: string;
@@ -12,11 +14,11 @@ type Product = {
   image: string;
 };
 
-type ImageKeys = keyof typeof images; 
+type ImageKeys = keyof typeof images;
 
 export default function CategoryScreen() {
-  const { type } = useLocalSearchParams(); 
-  const searchName = typeof type === "string" ? type.toLowerCase() : ""; 
+  const { type } = useLocalSearchParams();
+  const searchName = typeof type === "string" ? type.toLowerCase() : "";
   const categoryType = typeof type === "string" ? type.toLowerCase() : "";
   const router = useRouter();
   const categoryMap: { [key: string]: string } = {
@@ -46,14 +48,10 @@ export default function CategoryScreen() {
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => {
-            router.push('../(tabs)/home');
-          }}
+          onPress={() => { router.back() }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Image
-            source={require("../../assets/images/backbutton.png")}
-            style={styles.back}
-          />
+          <Ionicons name="arrow-back-circle-outline" size={36} color="#5D4037" />
         </TouchableOpacity>
 
         <Text style={styles.header}>{searchName}</Text>
@@ -65,7 +63,7 @@ export default function CategoryScreen() {
             renderItem={({ item }) => (
               <View style={styles.productItem}>
                 <Image
-                  source={images[item.image as ImageKeys]} 
+                  source={images[item.image as ImageKeys]}
                   style={styles.image}
                 />
                 <Text style={styles.name}>{item.name}</Text>
@@ -90,21 +88,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   backButton: {
-    position: "absolute",
-    top: 40,
-    left: 20,
-    width: 50,
-    height: 50,
-    zIndex: 999, 
-    elevation: 10,
+    position: 'absolute',
+    left: 15,
+    top: 55,
+    zIndex: 10,
   },
-  
+
   header: {
-    fontSize: 32, 
+    fontSize: 32,
     fontWeight: "bold",
     textTransform: "capitalize",
     textAlign: "center",
-    marginTop: 18, 
+    marginTop: 18,
   },
   productItem: {
     marginBottom: 20,
@@ -115,7 +110,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 5, 
+    elevation: 5,
     alignItems: "center",
   },
   image: {
@@ -139,8 +134,8 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   back: {
-    width: 35, 
-    height: 35, 
-    borderRadius: 17.5, 
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
   },
 });

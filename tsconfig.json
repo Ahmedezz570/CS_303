@@ -13,6 +13,15 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "app/(tabs)/products.jsx", "app/Login.jsx", "app/Register.jsx", "app/singlepage.jsx", "app/Review.jsx", "app/cart.jsx", "app/(tabs)/notifications.jsx"  ]
+    "expo-env.d.ts",
+    "app/(tabs)/products.jsx",
+    "app/Login.jsx",
+    "app/Register.jsx",
+    "app/singlepage.jsx",
+    "app/Review.jsx",
+    "app/cart.jsx",
+    "app/(tabs)/notifications.jsx",
+    "app/index.tsx",
+    "app/(ProfileTabs)/orders.tsx"
+  ]
 }

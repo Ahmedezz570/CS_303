@@ -1,19 +1,17 @@
 import React , {useEffect} from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 
 const WelcomeScreen = () => {
   const router = useRouter();
   useEffect(() => {
     const timer = setTimeout(() => {
-      // router.push('/');
-      router.push('./(tabs)/home');
+      router.push('/Admintabs/Preview');
     }, 3000); 
 
     return () => clearTimeout(timer);
   }, []);
 
-  
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -21,9 +19,12 @@ const WelcomeScreen = () => {
         <View style={styles.content}>
           <Image source={require('../assets/images/pngwing.com.png')} style={styles.logo} />
           <Text style={styles.title}>SUPERMALL</Text>
+          <ActivityIndicator 
+            size="large" 
+            color="#4A3222" 
+            style={styles.loader}
+          />
         </View>
-
-       
       </View>
     </>
   );
@@ -38,7 +39,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   content: {
-    bottom : 50,
+    bottom: 50,
     alignItems: 'center', 
   },
   title: {
@@ -51,8 +52,10 @@ const styles = StyleSheet.create({
     width: 90,
     height: 100,
     resizeMode: 'contain',
+  },
+  loader: {
+    marginTop: 20,
   }
 });
 
 export default WelcomeScreen;
-

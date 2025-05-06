@@ -121,6 +121,7 @@ const Notifications = () => {
         ListEmptyComponent={
           <Text style={styles.emptyText}>No notifications available.</Text>
         }
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   
   container: {
     flex: 1,
-    backgroundColor: '#fff8f0',
+    backgroundColor: 'white',
     padding: 16,
   },
   header: {

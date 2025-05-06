@@ -75,12 +75,7 @@ const Profile = () => {
           <View style={{ display: "flex", flexDirection: "row" }}>
             <Text style={styles.textb}>Orders</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
+          <View style={styles.arrow}></View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -93,12 +88,7 @@ const Profile = () => {
           <View style={{ display: "flex", flexDirection: "row" }}>
             <Text style={styles.textb}>Address</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
+          <View style={styles.arrow}></View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -111,30 +101,7 @@ const Profile = () => {
           <View style={{ display: "flex", flexDirection: "row" }}>
             <Text style={styles.textb}>Wishlist</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.profiletabs}
-          onPress={() => {
-            router.push('../(ProfileTabs)/Payment');
-          }}
-          activeOpacity={0.6}
-        >
-          <View style={{ display: "flex", flexDirection: "row" }}>
-            <Text style={styles.textb}>Payment</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
+          <View style={styles.arrow}></View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -147,38 +114,28 @@ const Profile = () => {
           <View style={{ display: "flex", flexDirection: "row" }}>
             <Text style={styles.textb}>Help & Support</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Image
-              source={require("../../assets/images/backtab.png")}
-              style={styles.backtab}
-            />
-          </View>
+          <View style={styles.arrow}></View>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.profiletabs}
+          onPress={() => {
+            router.push('../(ProfileTabs)/About');
+          }}
+          activeOpacity={0.6}
+        >
+          <View style={{ display: "flex", flexDirection: "row" }}>
+            <Text style={styles.textb}>About</Text>
+          </View>
+          <View style={styles.arrow}></View>
+        </TouchableOpacity>
         <View
           style={{
             flexGrow: 1,
             justifyContent: "center",
             width: "100%",
             alignItems: "center",
-          }}
-        >
-          <TouchableOpacity
-            style={styles.out}
-            onPress={() => {
-              auth.signOut();
-              setAlertMessage("Bye Bye 👋 \nWe will miss you 🤍");
-              setAlertType("error");
-              setTimeout(() => {
-                router.replace("../Login");
-              }, 3000);
-            }}
-            activeOpacity={0.4}
-          >
-            <Text style={{ fontSize: 20, color: "darkred", fontWeight: "bold" }}>
-              Sign Out
-            </Text>
-          </TouchableOpacity>
+          }}>
         </View>
       </View>
     </>
@@ -191,14 +148,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAE5D3',
-  },
-  backtab: {
-    width: 30,
-    height: 30,
-    position: "absolute",
-    right: 15,
-    top: 11,
+    backgroundColor: 'white',
   },
   profiletabs: {
     backgroundColor: 'white',
@@ -291,6 +241,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  arrow: {
+    width: 20,
+    height: 20,
+    borderLeftWidth: 5,
+    borderBottomWidth: 5,
+    borderColor: "#111",
+    transform: "rotate(45deg)",
+    borderRadius: 4,
+    position: "absolute",
+    right: 15,
+    top: 16,
+  }
 });
 
 export default Profile;
