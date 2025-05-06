@@ -5,6 +5,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, getUserData } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,6 +32,12 @@ const Login = () => {
       if (userDoc.exists()) {
         const data = await getUserData(user.uid);
         console.log(data?.isAdmin);
+
+        await AsyncStorage.setItem('DataForUser', JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          isAdmin: data?.isAdmin || false,
+        }));
         if (data?.isAdmin === true) {
           Alert.alert("Success", "Welcome Admin");
           router.replace('./Admintabs');

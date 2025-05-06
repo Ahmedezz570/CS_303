@@ -13,7 +13,7 @@ import { auth, db, getUserData } from '../../Firebase/Firebase';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import MiniAlert from '../(ProfileTabs)/MiniAlert';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 interface User {
     id?: string;
     isAdmin?: boolean;
@@ -103,8 +103,9 @@ const Admin = () => {
         fetchUserData();
     }, []);
 
-    const logout = () => {
-        auth.signOut();
+    const logout = async () => {
+       await auth.signOut();
+         await AsyncStorage.removeItem('DataForUser');
         setAlertMessage("Logged out successfully");
         setAlertType("error");
         setTimeout(() => {
@@ -250,7 +251,7 @@ const Admin = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAE5D3',
+        backgroundColor: 'white',
     },
     loadingContainer: {
         justifyContent: 'center',
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     sectionHeader: {
-        flexDirection: 'row',
+        // flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16
     },
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#4a90e2',
-        marginLeft: 'auto',
+        // marginLeft: 'auto',
     },
     innerRow: {
         flexDirection: 'row',

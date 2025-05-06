@@ -233,7 +233,7 @@ const orders = () => {
   };
 
   return (
-    <>
+    <>  
       <Stack.Screen name="orders" options={{ headerShown: false }} />
       <LinearGradient
         colors={['#FFF0E1', '#FFE4C4']}

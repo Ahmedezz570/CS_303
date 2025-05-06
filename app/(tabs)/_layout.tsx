@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 export default function TabLayout() {
   return (
@@ -49,6 +50,15 @@ export default function TabLayout() {
           )
         }}
       />
+            <Tabs.Screen
+        name='chatBot'
+        options={{
+          title: 'Your Assitant',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 name="robot" size={24} color={color} />
+          )
+        }}
+      />
       <Tabs.Screen
         name='notifications'
         options={{
@@ -58,15 +68,7 @@ export default function TabLayout() {
           )
         }}
       />
-      {/* <Tabs.Screen
-        name='cart'
-        options={{
-          title: 'Cart',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name='cart-outline' size={24} color={color} />
-          )
-        }}
-      /> */}
+
       <Tabs.Screen
         name='profile'
         options={{
