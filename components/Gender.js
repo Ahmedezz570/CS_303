@@ -23,9 +23,9 @@ const Gengder = ({ modalVisible_1, setModalVisible_1 , onSelect}) => {
         <View style={styles.modalContainer}>
 
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setSelectedOption("Men")}>
+            {/* <TouchableOpacity onPress={() => setSelectedOption("Men")}>
               <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Text style={styles.title}>Gender</Text>
             <TouchableOpacity onPress={() => setModalVisible_1(false)}>
               <Icon name="close" size={20} color="black" />

@@ -31,9 +31,9 @@ const Price = ({ modalVisible_2, setModalVisible_2, onApply }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => { setMin(""); setMax(""); }}>
+            {/* <TouchableOpacity onPress={() => { setMin(""); setMax(""); }}>
               <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Text style={styles.title}>Price</Text>
             <TouchableOpacity onPress={() => setModalVisible_2(false)}>
               <Icon name="close" size={20} color="black" />

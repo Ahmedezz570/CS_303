@@ -1,16 +1,17 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState , useRef} from 'react';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc ,arrayUnion } from "firebase/firestore";
 import { db } from "../Firebase/Firebase.jsx";
 import { getAuth } from "firebase/auth";
 import { Ionicons } from '@expo/vector-icons';
-
+import LottieView from 'lottie-react-native';
 const CartScreen = () => {
   const router = useRouter();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [isCheckoutComplete, setIsCheckoutComplete] = useState(false);
+  const animation = useRef(null);
   useEffect(() => {
     const fetchCart = async () => {
       try {
@@ -75,9 +76,9 @@ const CartScreen = () => {
 
     setCart(prev => prev.filter(i => i.id !== id));
   };
-
+  const user = getAuth().currentUser;
   const clearCart = async () => {
-    const user = getAuth().currentUser;
+    
     if (!user) return;
 
     const cartRef = collection(db, "Users", user.uid, "cart");
@@ -88,6 +89,69 @@ const CartScreen = () => {
     setCart([]);
   };
 
+  const handleCheckout = async () => {
+    try {
+        const cartRef = collection(db, "Users", user.uid, "cart");
+        const snapshot = await getDocs(cartRef);
+
+        
+        const cartItems = [];
+        snapshot.forEach((doc) => {
+            cartItems.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        if (cartItems.length === 0) {
+            Alert.alert("Cart is empty", "There are no items to checkout.");
+            return;
+        }
+
+        const userDocRef = doc(db, "Users", user.uid);
+
+        
+        await updateDoc(userDocRef, {
+            Orders: cartItems,
+            Orders: arrayUnion(...cartItems)
+        });
+
+        setIsCheckoutComplete(true)
+       
+        snapshot.forEach(async (doc) => {
+            await deleteDoc(doc.ref);
+        });
+
+       
+        setCart([]);
+
+    } catch (error) {
+        console.error("Error during checkout:", error);
+        Alert.alert("Error", "Could not complete checkout. Please try again.");
+    }
+};
+
+if (isCheckoutComplete) {
+  return (
+    <View style={{  backgroundColor: 'white',
+      padding: 20,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+      }}>
+      <LottieView
+        source={require('../components/Animation.json')} 
+        autoPlay
+        loop={false}
+        onAnimationFinish={() => setIsCheckoutComplete(false)}
+        style={{ width: 200, height: 200 }}
+      />
+      <Text style={{ fontSize: 20, marginTop: 20 }}>Checkout Successful!</Text>
+    
+    </View>
+  );
+}
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = cart.length > 0 ? 50 : 0;
@@ -124,7 +188,9 @@ const CartScreen = () => {
             <Text style={styles.clearButtonText}>Remove All</Text>
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 90 }} />
+          <View style={{ width: 90 , justifyContent : 'center', alignItems: 'center'}}>
+          {/* <Text style={{  fontSize: 18,color: "#555",textAlign: "center",marginTop: 20,}}>Cart is empty</Text> */}
+        </View>
         )}
       </View>
 
@@ -156,7 +222,8 @@ const CartScreen = () => {
           </View>
         )}
       />
-
+{cart.length > 0 ? (
+  <>
       <View style={styles.summary}>
         <Text style={styles.summaryText}>Subtotal: EGP{subtotal}</Text>
         <Text style={styles.summaryText}>Shipping Cost: EGP{shippingCost}</Text>
@@ -167,9 +234,35 @@ const CartScreen = () => {
         <Text style={styles.total}>Total: EGP{total}</Text>
       </View>
 
-      <TouchableOpacity style={styles.checkoutButton}>
+      <TouchableOpacity style={styles.checkoutButton} onPress={()=>{handleCheckout()}}>
         <Text style={styles.checkoutText}>Checkout</Text>
       </TouchableOpacity>
+     </> ):(
+       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+       <Text style={{ fontSize: 18, color: '#555', textAlign: 'center', marginTop: 20 }}>
+         Your Cart is currently empty.
+       </Text>
+       <Text style={{ fontSize: 16, color: '#888', textAlign: 'center', marginTop: 10 }}>
+         Start shopping and add items to your cart to see them here.
+       </Text>
+       <TouchableOpacity
+         style={{
+           backgroundColor: '#FF5733',
+           paddingVertical: 12,
+           paddingHorizontal: 30,
+           borderRadius: 25,
+           marginTop: 20,
+         }}
+         onPress={() =>router.push("/(tabs)/home")} 
+       >
+         <Text style={{ color: 'white', fontSize: 16, textAlign: 'center' }}>
+           Shop Now
+         </Text>
+       </TouchableOpacity>
+     </View>
+     
+        
+      )}
     </View>
   );
 };
@@ -189,11 +282,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconButton: {
-    backgroundColor: '#FAE5D3',
+    backgroundColor: 'white',
     padding: 10,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    // shadowColor: '#000',
+    // shadowOpacity: 0.1,
+    // shadowRadius: 5,
+    // elevation: 3,
   },
   clearButton: {
     backgroundColor: 'red',

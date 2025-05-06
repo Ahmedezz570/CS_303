@@ -18,7 +18,7 @@ const Layout = () => {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
          <Stack.Screen name="Settings" options={{ headerShown: false }} />
         <Stack.Screen name="singlepage" options={{ headerShown: false }} />
-        <Stack.Screen name="Categories/SeeAllCategories" options={{ title: "back" }} />
+        <Stack.Screen name="DisplayCategories" options={{ headerShown: false }} />
       </Stack>
     </CartProvider>
   );
