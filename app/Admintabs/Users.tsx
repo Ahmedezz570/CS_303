@@ -5,17 +5,18 @@ import {
     FlatList,
     StyleSheet,
     TouchableOpacity,
-    Alert,
     ActivityIndicator,
     Image,
     RefreshControl,
-    TextInput
+    TextInput,
+    Modal
 } from 'react-native';
 import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
 import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import MiniAlert from '../(ProfileTabs)/MiniAlert';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface User {
     id: string;
@@ -36,6 +37,11 @@ const Users = () => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [alertMessage, setAlertMessage] = useState<string | null>(null);
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [loadingb, setLoadingb] = useState(false);
+
+
 
     const fetchUsers = async () => {
         try {
@@ -54,7 +60,8 @@ const Users = () => {
             }
         } catch (error) {
             console.error("Error fetching users:", error);
-            Alert.alert("Error", "Failed to load users");
+            setAlertMessage("Failed to load users");
+            setAlertType("error");
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -87,41 +94,38 @@ const Users = () => {
         }
     };
 
-    const deleteUser = async (id: string) => {
-        if (id === currentUserId) {
+    const confirmDeleteUser = (user: User) => {
+        if (user.id === currentUserId) {
             setAlertMessage("You Cant Delete Yourself");
             setAlertType("error");
             return;
         }
 
-        Alert.alert(
-            "Delete User",
-            "Are you sure you want to delete this user?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteUserFromServer(id);
-                            await deleteDoc(doc(db, "Users", id));
-                            setAlertMessage("User Deleted Successfully");
-                            setAlertType("success");
-                            fetchUsers();
-                        } catch (error) {
-                            setAlertMessage("An Error Occurred While Deleting User");
-                            setAlertType("error");
-                        }
-                    }
-                }
-            ]
-        );
+        setSelectedUser(user);
+        setModalVisible(true);
+    };
+
+    const deleteUser = async () => {
+        if (!selectedUser) return;
+        setLoadingb(true);
+        try {
+            await deleteUserFromServer(selectedUser.id);
+            await deleteDoc(doc(db, "Users", selectedUser.id));
+            setAlertMessage("User Deleted Successfully");
+            setAlertType("success");
+            fetchUsers();
+        } catch (error) {
+            setAlertMessage("An Error Occurred While Deleting User");
+            setAlertType("error");
+        } finally {
+            setModalVisible(false);
+            setSelectedUser(null);
+        }
     };
 
     const deleteUserFromServer = async (uid: string) => {
         try {
-            const response = await fetch(`https://my-node-yucq.onrender.com/delete-user`, {
+            await fetch(`https://my-node-yucq.onrender.com/delete-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,77 +163,82 @@ const Users = () => {
 
     const renderItem = ({ item }: { item: User }) => (
         <View style={[styles.card, item.isAdmin && styles.adminCard]}>
-            <View style={styles.userHeader}>
-                {item.image ? (
-                    <Image
-                        source={{ uri: item.image }}
-                        style={styles.userImage}
-                    />
-                ) : (
-                    <View style={[styles.userImage, styles.defaultImage]}>
-                        <FontAwesome name="user" size={20} color="#fff" />
-                    </View>
-                )}
+            <LinearGradient
+                colors={item.isAdmin == false ? ['#D1F4FF', '#ffffff'] : ['#f9f0ff', '#f9f0ff']}
+                style={styles.cardGradient}
+            >
+                <View style={styles.userHeader}>
+                    {item.image ? (
+                        <Image
+                            source={{ uri: item.image }}
+                            style={styles.userImage}
+                        />
+                    ) : (
+                        <View style={[styles.userImage, styles.defaultImage]}>
+                            <FontAwesome name="user" size={20} color="#fff" />
+                        </View>
+                    )}
 
-                <View style={styles.userInfoContainer}>
-                    <View style={styles.nameRow}>
-                        <Text style={styles.username}>{item.username || 'No name'}</Text>
-                        {item.isAdmin && (
-                            <MaterialIcons
-                                name="verified"
-                                size={18}
-                                color="#4a90e2"
-                                style={styles.verifiedIcon}
-                            />
-                        )}
-                    </View>
+                    <View style={styles.userInfoContainer}>
+                        <View style={styles.nameRow}>
+                            <Text style={styles.username}>{item.username || 'No name'}</Text>
+                            {item.isAdmin && (
+                                <MaterialIcons
+                                    name="verified"
+                                    size={18}
+                                    color="#4a90e2"
+                                    style={styles.verifiedIcon}
+                                />
+                            )}
+                        </View>
 
-                    <View style={styles.infoRow}>
-                        <MaterialIcons name="email" size={16} color="#777" />
-                        <Text style={styles.email} numberOfLines={1}>{item.email}</Text>
+                        <View style={styles.infoRow}>
+                            <MaterialIcons name="email" size={16} color="#777" />
+                            <Text style={styles.email} numberOfLines={1}>{item.email}</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            <View style={styles.detailsRow}>
-                <View style={styles.detailItem}>
-                    <MaterialIcons name="phone" size={16} color="#4a90e2" />
-                    <Text style={styles.detailText}>{item.phone || 'No phone'}</Text>
+                <View style={styles.detailsRow}>
+                    <View style={styles.detailItem}>
+                        <MaterialIcons name="phone" size={16} color="#4a90e2" />
+                        <Text style={styles.detailText}>{item.phone || 'No phone'}</Text>
+                    </View>
+
+                    <View style={styles.detailItem}>
+                        <Ionicons
+                            name={item.isAdmin ? 'shield-checkmark' : 'person'}
+                            size={16}
+                            color={item.isAdmin ? '#4a90e2' : '#777'}
+                        />
+                        <Text style={styles.detailText}>
+                            {item.isAdmin ? 'Admin' : 'User'}
+                        </Text>
+                    </View>
                 </View>
 
-                <View style={styles.detailItem}>
-                    <Ionicons
-                        name={item.isAdmin ? 'shield-checkmark' : 'person'}
-                        size={16}
-                        color={item.isAdmin ? '#4a90e2' : '#777'}
-                    />
-                    <Text style={styles.detailText}>
-                        {item.isAdmin ? 'Admin' : 'User'}
-                    </Text>
+                <View style={styles.actions}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.actionButton, item.isAdmin ? styles.removeAdmin : styles.makeAdmin, item.id === currentUserId && styles.disabledButton]}
+                        onPress={() => toggleAdmin(item.id, item.isAdmin || false)}
+                        disabled={item.id === currentUserId}
+                    >
+                        <Feather name={item.isAdmin ? 'user-minus' : 'user-plus'} size={16} color="#fff" />
+                        <Text style={styles.buttonText}>
+                            {item.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.actionButton, styles.deleteButton, item.id === currentUserId && styles.disabledButton]}
+                        onPress={() => confirmDeleteUser(item)}
+                        disabled={item.id === currentUserId}
+                    >
+                        <Feather name="trash-2" size={16} color="#fff" />
+                        <Text style={styles.buttonText}>Delete</Text>
+                    </TouchableOpacity>
                 </View>
-            </View>
-
-            <View style={styles.actions}>
-                <TouchableOpacity
-                    style={[styles.button, styles.actionButton, item.isAdmin ? styles.removeAdmin : styles.makeAdmin, item.id === currentUserId && styles.disabledButton]}
-                    onPress={() => toggleAdmin(item.id, item.isAdmin || false)}
-                    disabled={item.id === currentUserId}
-                >
-                    <Feather name={item.isAdmin ? 'user-minus' : 'user-plus'} size={16} color="#fff" />
-                    <Text style={styles.buttonText}>
-                        {item.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.button, styles.actionButton, styles.deleteButton, item.id === currentUserId && styles.disabledButton]}
-                    onPress={() => deleteUser(item.id)}
-                    disabled={item.id === currentUserId}
-                >
-                    <Feather name="trash-2" size={16} color="#fff" />
-                    <Text style={styles.buttonText}>Delete</Text>
-                </TouchableOpacity>
-            </View>
+            </LinearGradient>
         </View>
     );
 
@@ -298,12 +307,114 @@ const Users = () => {
                         }
                     />
                 )}
+
+                <Modal
+                    visible={modalVisible}
+                    animationType='slide'
+                    transparent={true}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <MaterialIcons name="warning" size={36} color="#f39c12" />
+                                <Text style={styles.modalTitle}>Delete {String(selectedUser?.username).toUpperCase()}</Text>
+                            </View>
+
+                            <Text style={styles.modalText}>
+                                Are you sure you want to delete this user? This action cannot be undone.
+                            </Text>
+
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => setModalVisible(false)}
+                                >
+                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.confirmButton]}
+                                    onPress={deleteUser}
+                                    disabled={loadingb}
+                                >
+                                    {loadingb ? (
+                                        <ActivityIndicator size="small" color="#000" />
+                                    ) : (
+                                        <Text style={styles.confirmButtonText}>Delete</Text>)}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </>
     );
 };
 
 const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        width: '85%',
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        padding: 22,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginTop: 10,
+    },
+    modalText: {
+        fontSize: 16,
+        color: '#555',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    modalButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        minWidth: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#f1f2f6',
+        marginRight: 10,
+    },
+    cancelButtonText: {
+        color: '#555',
+        fontWeight: 'bold',
+    },
+    confirmButton: {
+        backgroundColor: '#ff6b6b',
+    },
+    confirmButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
     container: {
         flex: 1,
         backgroundColor: 'white',
@@ -312,7 +423,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FAE5D3',
+        backgroundColor: 'white',
     },
     loadingText: {
         color: '#2d3436',
@@ -376,7 +487,6 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
         borderRadius: 10,
-        padding: 16,
         marginBottom: 15,
         elevation: 8,
         shadowColor: '#000',
@@ -499,6 +609,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#777',
         marginTop: 10,
+    },
+    cardGradient: {
+        padding: 20,
+        borderRadius: 10,
     },
 });
 

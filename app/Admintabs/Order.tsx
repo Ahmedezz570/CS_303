@@ -11,7 +11,6 @@ import {
     TextInput,
     LayoutAnimation,
     Platform,
-    UIManager,
     Keyboard,
 } from 'react-native';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
@@ -21,8 +20,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome, Ionicons, Feather, AntDesign, Entypo } from '@expo/vector-icons';
 import MiniAlert from '../(ProfileTabs)/MiniAlert';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
+interface OrderItem {
+    id: string;
+    productId: string;
+    quantity: number;
 }
 
 interface Product {
@@ -32,6 +33,7 @@ interface Product {
     image?: string;
     description?: string;
     quantity?: number;
+    discount?: number;
 }
 
 interface User {
@@ -41,7 +43,7 @@ interface User {
     email?: string;
     phone?: string;
     image?: string;
-    UserOrder?: string[];
+    Orders?: OrderItem[];
     totalItems?: number;
     totalSpent?: number;
     products?: Product[];
@@ -70,9 +72,14 @@ const OrdersScreen = () => {
                 .map(userDoc => {
                     const userData = userDoc.data();
 
-                    if (!userData.UserOrder || !Array.isArray(userData.UserOrder) || userData.UserOrder.length === 0) {
+                    if (!userData.Orders || !Array.isArray(userData.Orders) || userData.Orders.length === 0) {
                         return null;
                     }
+
+                    const totalItems = userData.Orders.reduce(
+                        (sum: number, order: OrderItem) => sum + (order.quantity || 0),
+                        0
+                    );
 
                     const user: User = {
                         id: userDoc.id,
@@ -81,8 +88,8 @@ const OrdersScreen = () => {
                         email: userData.email,
                         phone: userData.phone,
                         image: userData.image,
-                        UserOrder: userData.UserOrder,
-                        totalItems: userData.UserOrder.length,
+                        Orders: userData.Orders,
+                        totalItems: totalItems,
                         products: [],
                         totalSpent: 0
                     };
@@ -144,19 +151,27 @@ const OrdersScreen = () => {
             const productMap = new Map<string, Product>();
             let totalSpent = 0;
 
-            if (user.UserOrder && Array.isArray(user.UserOrder)) {
-                for (const productId of user.UserOrder) {
+            if (user.Orders && Array.isArray(user.Orders)) {
+                for (const order of user.Orders) {
+                    if (!order || !order.productId || !order.quantity) continue;
+
+                    const { productId, quantity } = order;
+
                     if (productMap.has(productId)) {
                         const product = productMap.get(productId)!;
                         productMap.set(productId, {
                             ...product,
-                            quantity: (product.quantity || 0) + 1
+                            quantity: (product.quantity || 0) + quantity
                         });
                     } else {
-                        productMap.set(productId, { id: productId, quantity: 1 });
+                        productMap.set(productId, {
+                            id: productId,
+                            quantity: quantity
+                        });
                     }
                 }
             }
+
             const productPromises = Array.from(productMap.keys()).map(async (productId) => {
                 try {
                     const productDoc = await getDoc(doc(db, "products", productId));
@@ -165,8 +180,8 @@ const OrdersScreen = () => {
                         const product = productMap.get(productId)!;
                         const quantity = product.quantity || 0;
                         const price = productData.price || 0;
-
-                        totalSpent += price * quantity;
+                        const discount = productData.discount || 0;
+                        totalSpent += (price * quantity) - (price * discount / 100) * quantity;
 
                         return {
                             id: productDoc.id,
@@ -174,7 +189,8 @@ const OrdersScreen = () => {
                             price: price,
                             image: productData.image,
                             description: productData.description,
-                            quantity: quantity
+                            quantity: quantity,
+                            discount: discount,
                         };
                     }
                 } catch (error) {
@@ -230,7 +246,7 @@ const OrdersScreen = () => {
             activeOpacity={0.9}
         >
             <LinearGradient
-                colors={['#f7f7f7', '#ffffff']}
+                colors={['#D1F4FF', '#ffffff']}
                 style={styles.cardGradient}
             >
                 <View style={styles.userHeader}>
@@ -303,8 +319,32 @@ const OrdersScreen = () => {
 
                                     <View style={styles.priceQuantityRow}>
                                         <View style={styles.priceContainer}>
-                                            <FontAwesome name="dollar" size={14} color="#4CAF50" />
-                                            <Text style={styles.productPrice}>{product.price?.toFixed(2)}</Text>
+                                            {(product.discount || 0) > 0 ? (
+                                                <View style={styles.priceWithDiscountContainer}>
+                                                    <View style={styles.originalPriceContainer}>
+                                                        <FontAwesome name="dollar" size={12} color="#777" />
+                                                        <Text style={styles.originalPrice}>
+                                                            {product.price?.toFixed(2)}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.discountedPriceContainer}>
+                                                        <FontAwesome name="dollar" size={14} color="#4CAF50" />
+                                                        <Text style={styles.discountedPrice}>
+                                                            {((product.price || 0) - ((product.price || 0) * (product.discount || 0) / 100)).toFixed(2)}
+                                                        </Text>
+                                                        <View style={styles.discountPercentBadge}>
+                                                            <Text style={styles.discountPercentText}>-{product.discount}%</Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                            ) : (
+                                                <View style={styles.regularPriceContainer}>
+                                                    <FontAwesome name="dollar" size={14} color="#4CAF50" />
+                                                    <Text style={styles.productPrice}>
+                                                        {product.price?.toFixed(2)}
+                                                    </Text>
+                                                </View>
+                                            )}
                                         </View>
 
                                         <View style={styles.quantityContainer}>
@@ -317,9 +357,16 @@ const OrdersScreen = () => {
 
                                     <View style={styles.subtotalRow}>
                                         <Text style={styles.subtotalLabel}>Subtotal:</Text>
-                                        <Text style={styles.subtotalValue}>
-                                            ${((product.price || 0) * (product.quantity || 1)).toFixed(2)}
-                                        </Text>
+                                        <View style={styles.subtotalValues}>
+                                            {(product.discount || 0) > 0 && (
+                                                <Text style={styles.originalSubtotal}>
+                                                    ${((product.price || 0) * (product.quantity || 0)).toFixed(2)}
+                                                </Text>
+                                            )}
+                                            <Text style={styles.subtotalValue}>
+                                                ${(((product.price || 0) * (product.quantity || 0)) - ((product.price || 0) * (product.discount || 0) / 100) * (product.quantity || 0)).toFixed(2)}
+                                            </Text>
+                                        </View>
                                     </View>
                                 </View>
                             </View>
@@ -457,7 +504,7 @@ const OrdersScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAE5D3',
+        backgroundColor: '#ffffff',
     },
     header: {
         flexDirection: 'row',
@@ -501,11 +548,6 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         borderRadius: 10,
         overflow: 'hidden',
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.25,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 3.84,
     },
     cardGradient: {
         padding: 16,
@@ -658,14 +700,53 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     priceContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: 'column',
     },
     productPrice: {
         fontSize: 15,
         color: 'darkgreen',
         fontWeight: 'bold',
         marginLeft: 4,
+    },
+    priceWithDiscountContainer: {
+        flexDirection: 'column',
+    },
+    originalPriceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    originalPrice: {
+        fontSize: 13,
+        color: '#777',
+        textDecorationLine: 'line-through',
+        marginLeft: 3,
+    },
+    discountedPriceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    discountedPrice: {
+        fontSize: 15,
+        color: 'darkgreen',
+        fontWeight: 'bold',
+        marginLeft: 4,
+    },
+    discountPercentBadge: {
+        backgroundColor: '#ff6b6b',
+        borderRadius: 4,
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+        marginLeft: 6,
+    },
+    discountPercentText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    regularPriceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     quantityContainer: {
         flexDirection: 'row',
@@ -718,7 +799,7 @@ const styles = StyleSheet.create({
         height: '100%',
         fontSize: 16,
         color: '#333',
-        textAlign: Platform.OS === 'android' ? 'right' : 'auto',
+        textAlign: Platform.OS === 'android' ? 'left' : 'auto',
     },
     clearButton: {
         padding: 4,
@@ -740,18 +821,28 @@ const styles = StyleSheet.create({
     filterButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        paddingVertical: 8,
+        backgroundColor: '#f0f8ff',
+        paddingVertical: 10,
         paddingHorizontal: 16,
         borderRadius: 20,
         justifyContent: 'center',
         width: '48%',
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: '#add8e6',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 6,
     },
     activeFilterButton: {
         backgroundColor: 'purple',
-        borderColor: 'purple',
+        borderColor: '#9370db',
+        shadowColor: 'purple',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.6,
+        shadowRadius: 6,
+        elevation: 8,
     },
     filterButtonText: {
         color: '#333',
@@ -771,6 +862,25 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
         fontStyle: 'italic',
+    },
+    discountText: {
+        color: '#e91e63',
+        fontWeight: '500',
+    },
+    discountBadge: {
+        fontSize: 12,
+        color: '#e91e63',
+        fontStyle: 'italic',
+    },
+    subtotalValues: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    originalSubtotal: {
+        fontSize: 13,
+        color: '#999',
+        textDecorationLine: 'line-through',
+        marginRight: 5,
     },
 });
 

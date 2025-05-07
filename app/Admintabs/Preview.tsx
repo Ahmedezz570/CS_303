@@ -9,8 +9,6 @@ import {
   Modal,
   ActivityIndicator,
   Keyboard,
-  Platform,
-  UIManager,
   LayoutAnimation,
   ScrollView,
   RefreshControl,
@@ -21,7 +19,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { db } from '../../Firebase/Firebase';
 import { collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore';
-import { router } from 'expo-router';
 import Entypo from '@expo/vector-icons/Entypo';
 import MiniAlert from '../(ProfileTabs)/MiniAlert';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,10 +33,12 @@ interface Product {
   description?: string;
   category?: string;
   image?: string;
+  discount?: number;
 }
 
-interface EditingProduct extends Omit<Product, 'price'> {
+interface EditingProduct extends Omit<Product, 'price' | 'discount'> {
   price?: string;
+  discount?: string;
 }
 
 const Preview = () => {
@@ -167,7 +166,11 @@ const Preview = () => {
   };
 
   const handleEdit = (item: Product) => {
-    setEditingProduct({ ...item, price: item.price?.toString() || '0' });
+    setEditingProduct({
+      ...item,
+      price: item.price?.toString() || '0',
+      discount: item.discount?.toString() || '0'
+    });
     setEditModalVisible(true);
   };
 
@@ -186,6 +189,7 @@ const Preview = () => {
         description: editingProduct.description,
         category: editingProduct.category,
         image: editingProduct.image,
+        discount: parseFloat(editingProduct.discount || '0'),
       });
       setAlertMsg("Product updated successfully");
       setAlertType("success");
@@ -277,6 +281,10 @@ const Preview = () => {
 
   const renderItem = ({ item }: ListRenderItemInfo<Product>) => {
     const isExpanded = expanded === item.id;
+    const discountedPrice = item.price && item.discount
+      ? item.price - (item.price * item.discount / 100)
+      : item.price;
+
     return (
       <View style={styles.card}>
         <LinearGradient
@@ -317,7 +325,15 @@ const Preview = () => {
 
               <View style={styles.priceContainer}>
                 <FontAwesome name="dollar" size={16} color="#4CAF50" />
-                <Text style={styles.priceText}>{(item.price || 0).toFixed(2)}</Text>
+                {item.discount && item.discount > 0 ? (
+                  <View style={styles.priceWithDiscountContainer}>
+                    <Text style={styles.originalPrice}>{(item.price || 0).toFixed(2)}</Text>
+                    <Text style={styles.priceText}>{discountedPrice?.toFixed(2)}</Text>
+                    <Text style={styles.discountBadge}>(-{item.discount}%)</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.priceText}>{(item.price || 0).toFixed(2)}</Text>
+                )}
               </View>
 
               {item.description && (
@@ -631,6 +647,17 @@ const Preview = () => {
             </View>
 
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>Discount (%)</Text>
+              <TextInput
+                style={styles.input}
+                value={editingProduct?.discount?.toString() || ''}
+                onChangeText={(text) => setEditingProduct(editingProduct ? { ...editingProduct, discount: text } : null)}
+                placeholder="Discount percentage (0-100)"
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
               <Text style={styles.label}>Description</Text>
               <TextInput
                 style={[styles.input, styles.multilineInput]}
@@ -701,7 +728,6 @@ const Preview = () => {
                 <Text style={styles.imageSourceOptionText}>By Camera</Text>
               </TouchableOpacity>
             </View>
-
             <TouchableOpacity
               style={styles.imageSourceCancelButton}
               onPress={() => setImageSourceModalVisible(false)}
@@ -1153,6 +1179,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     fontWeight: 'bold',
+  },
+  priceWithDiscountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  originalPrice: {
+    fontSize: 14,
+    color: '#777',
+    textDecorationLine: 'line-through',
+    marginRight: 5,
+  },
+  discountBadge: {
+    fontSize: 12,
+    color: '#e91e63',
+    fontWeight: '500',
+    marginLeft: 4,
   },
 });
 

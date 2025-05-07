@@ -1,4 +1,4 @@
-import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -6,20 +6,22 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, getUserData } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MiniAlert from './(ProfileTabs)/MiniAlert';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [alertMessage, setAlertMessage] = useState(null);
+  const [alertType, setAlertType] = useState('success');
 
   const router = useRouter();
   const signin = async () => {
     setError('');
     if (!email || !password) {
-      setError('Please fill all fields');
-      Alert.alert("Error", "please write email and password");
-
+      setAlertMessage('Please fill all fields');
+      setAlertType('error');
       return;
     }
     setLoading(true);
@@ -38,34 +40,51 @@ const Login = () => {
           email: user.email,
           isAdmin: data?.isAdmin || false,
         }));
+
         if (data?.isAdmin === true) {
-          Alert.alert("Success", "Welcome Admin");
-          router.replace('./Admintabs');
-          router.push('./Admintabs/Admin');
+          setAlertMessage('Welcome Admin!');
+          setAlertType('success');
+          setTimeout(() => {
+            router.replace('./Admintabs');
+            router.push('./Admintabs/Admin');
+          }, 1500);
         }
         else {
-          Alert.alert("Success", "User logged in successfully");
-          router.replace('/(tabs)');
-          router.push('/home');
+          setAlertMessage('Welcome back! Login successful');
+          setAlertType('success');
+          setTimeout(() => {
+            router.replace('/(tabs)');
+            router.push('/home');
+          }, 1500);
         }
       } else {
         setError('User not found.');
-      Alert.alert("Error","wrong Email or password")
+        setAlertMessage('User not found');
+        setAlertType('error');
       }
 
     } catch (error) {
       setError('Invalid email or password.');
-      Alert.alert("Error","wrong Email or password")
-      Alert.alert("Error","wrong Email or password")
+      setAlertMessage('Invalid email or password');
+      setAlertType('error');
     }
     setLoading(false);
   }
 
   const reg = () => {
-    router.replace('/Register');
+    router.push('/Register');
   }
   return (
     <View style={styles.fl}>
+      {
+        alertMessage && (
+          <MiniAlert
+            message={alertMessage}
+            type={alertType}
+            onHide={() => setAlertMessage(null)}
+          />
+        )
+      }
       <View style={styles.container}>
         <Text style={styles.title}>Sign in</Text>
 
@@ -98,7 +117,7 @@ const Login = () => {
 
           </TouchableOpacity>
         </View>
-        
+
         <TouchableOpacity style={styles.button1} >
           <FontAwesome name='google' size={30} style={styles.icon}></FontAwesome>
 

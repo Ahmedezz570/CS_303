@@ -1,20 +1,18 @@
 import { Stack, router } from 'expo-router';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions,ScrollView, Modal, ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
+import React, { useEffect, useState, useRef } from 'react'
 import { auth, getUserData } from '../../Firebase/Firebase';
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../Firebase/Firebase";
 import MiniAlert from './MiniAlert';
-import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import ActionSheet from 'react-native-actionsheet';
-import { useRef } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { TouchableWithoutFeedback, Animated } from 'react-native';
 
+const { width } = Dimensions.get('window');
 
-
-
-const editprofile = () => {
+const EditProfile = () => {
   const [image, setImage] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [fullname, setFullname] = useState<string | null>(null);
@@ -22,64 +20,100 @@ const editprofile = () => {
   const [num, setNum] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+  const [load, setLoad] = useState<boolean>(false);
   const IMGBB_API_KEY = "5f368fdc294d3cd3ddc0b0e9297a10fb";
+  const [imageSourceModalVisible, setImageSourceModalVisible] = useState<boolean>(false);
 
-  const actionSheetRef = useRef<any>(null);
+  const [errors, setErrors] = useState<{
+    username?: string;
+    fullname?: string;
+    phone?: string;
+  }>({});
+
 
   const showImageOptions = () => {
-    actionSheetRef.current?.show();
+    setImageSourceModalVisible(true);
   };
 
-  const handleActionSheet = async (index: number) => {
-    if (index === 0) {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'You need to allow camera access to take photos.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 4],
-        quality: 1,
-      });
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      } else { setImage(null); }
-    } else if (index === 1) {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 4],
-        quality: 1,
-      });
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      } else { setImage(null); }
+  const pickImageFromGallery = async () => {
+    setImageSourceModalVisible(false);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
     }
   };
 
+  const takePhotoWithCamera = async () => {
+    setImageSourceModalVisible(false);
 
-  const SaveButton = ({ onPress }: { onPress: () => void }) => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      setAlertMessage("Camera permission is required to take photos.");
+      setAlertType("error");
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const SaveButton = () => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const pressIn = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const pressOut = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }).start();
+    };
+
     return (
-      <TouchableOpacity style={styles.button} onPress={() => { Update() }}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconTab} />
-          <View style={styles.iconCircle}>
-            <Svg width={30} height={30} viewBox="0 0 24 24">
-              <Path
-                d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
-                stroke="black"
-                strokeWidth={2}
-                fill="none"
-              />
-              <Rect x="7" y="3" width="6" height="5" stroke="black" strokeWidth={2} fill="none" />
-              <Path d="M9 17h6" stroke="black" strokeWidth={2} />
-            </Svg>
-          </View>
-        </View>
-        <Text style={styles.text1}>Save Changes</Text>
-      </TouchableOpacity>
+      <TouchableWithoutFeedback
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        onPress={validateAndUpdate}
+        disabled={load}
+      >
+        <Animated.View
+          style={[
+            styles.button,
+            { transform: [{ scale: scaleAnim }] }
+          ]}
+        >
+          {load ? (
+            <ActivityIndicator color="#fff" size="small" style={{ marginRight: 10 }} />
+          ) : (
+            <View style={styles.iconContainer}>
+              <MaterialIcons name="save" size={24} color="#fff" />
+            </View>
+          )}
+          <Text style={styles.buttonText}>
+            {load ? "Saving..." : "Save Changes"}
+          </Text>
+        </Animated.View>
+      </TouchableWithoutFeedback>
     );
   };
 
@@ -94,6 +128,7 @@ const editprofile = () => {
 
     fetchUserData();
   }, []);
+
   const uploadImageToImgbb = async (uri: string) => {
     const formData = new FormData();
     formData.append("image", {
@@ -114,236 +149,455 @@ const editprofile = () => {
     return data.data.url;
   };
 
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors: {
+      username?: string;
+      fullname?: string;
+      phone?: string;
+    } = {};
+
+    if (username && (username.length < 3 || username.length > 20)) {
+      newErrors.username = "Username must be between 3 and 20 characters";
+      isValid = false;
+    }
+
+    if (num && !/^\d{10}$/.test(num)) {
+      newErrors.phone = "Please enter a valid 10-digit phone number";
+      isValid = false;
+    }
+
+    if (fullname && fullname.length < 2) {
+      newErrors.fullname = "Full name must be at least 2 characters";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const validateAndUpdate = () => {
+    Keyboard.dismiss();
+    if (validateForm()) {
+      Update();
+    } else {
+      setAlertMessage("Please fix the errors in the form");
+      setAlertType("error");
+      setTimeout(() => setAlertMessage(null), 3000);
+    }
+  };
 
   async function Update() {
+    setLoad(true);
     const currentUser = auth.currentUser;
-    if (currentUser) {
-      const docRef = doc(db, "Users", currentUser?.uid);
-      if (image) {
-        const imageUrl = await uploadImageToImgbb(image);
-        await updateDoc(docRef, {
-          image: imageUrl,
-        });
+    try {
+      if (currentUser) {
+        const docRef = doc(db, "Users", currentUser?.uid);
+
+        if (image) {
+          const imageUrl = await uploadImageToImgbb(image);
+          await updateDoc(docRef, {
+            image: imageUrl,
+          });
+        }
+
+        const updates: any = {};
+        if (username) updates.username = username;
+        if (num) updates.phone = num;
+        if (fullname) updates.fullname = fullname;
+
+        if (Object.keys(updates).length > 0) {
+          await updateDoc(docRef, updates);
+        }
+
+        setAlertMessage("Profile updated successfully!");
+        setAlertType("success");
+        setTimeout(() => {
+          setLoad(false);
+          router.back();
+        }, 2000);
+      } else {
+        setAlertMessage("No user is currently logged in");
+        setAlertType("error");
+        setLoad(false);
+        setTimeout(() => {
+          router.replace("../Login");
+        }, 3000);
       }
-      if (username != null || "") {
-        await updateDoc(docRef, {
-          username: username,
-        });
-      }
-      if (num != null || "") {
-        await updateDoc(docRef, {
-          phone: num,
-        });
-      }
-      if (fullname != null || "") {
-        await updateDoc(docRef, {
-          fullname: fullname,
-        });
-      }
-      setAlertMessage("Update Successfully");
-      setAlertType("success");
-      setTimeout(() => {
-        router.replace("../(tabs)/profile");
-      }, 3000);
-    } else {
-      setAlertMessage("No User Is Currently Logged In");
+    } catch (error) {
+      console.error("Update error:", error);
+      setAlertMessage("Failed to update profile. Please try again.");
       setAlertType("error");
-      setTimeout(() => {
-        router.replace("../Login");
-      }, 3000);
+      setLoad(false);
     }
   }
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <>
-      <Stack.Screen name="address" options={{ headerShown: false, }} />
-      {
-        alertMessage && (
-          <MiniAlert
-            message={alertMessage}
-            type={alertType}
-            onHide={() => setAlertMessage(null)}
-          />
-        )
-      }
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => { router.back() }}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back-circle-outline" size={36} color="#5D4037" />
-        </TouchableOpacity>
-        <TouchableOpacity style={{ position: 'absolute', top: 110, }} onPress={showImageOptions}>
-          <Image source={image ? { uri: image } : { uri: userData?.image }} style={styles.logo} />
-          <Text style={styles.edit}>EDIT</Text>
-        </TouchableOpacity>
-        <View style={{ position: "absolute", width: "100%", top: 240, alignItems: "flex-start", display: 'flex', flexDirection: 'row', justifyContent: "space-around" }}>
-          <View>
-            <View>
-              <Text style={styles.text}> Username</Text>
-              <TextInput style={styles.inputbox} placeholder={String(userData?.username).toUpperCase()} onChangeText={(text) => { setUsername(text); }} />
-            </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <>
+          <Stack.Screen name="address" options={{ headerShown: false }} />
+          {alertMessage && (
+            <MiniAlert
+              message={alertMessage}
+              type={alertType}
+              onHide={() => setAlertMessage(null)}
+            />
+          )}
+          <LinearGradient
+            colors={['#f9f9f9', '#f0e6dd', '#e8d0c0']}
+            style={styles.gradientContainer}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => { router.back() }}
+                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              >
+                <Ionicons name="arrow-back-circle-outline" size={46} color="#5D4037" />
+              </TouchableOpacity>
 
-            <View>
-              <Text style={styles.text}> Phone Number</Text>
-              <TextInput style={styles.inputbox} placeholder={userData?.phone} keyboardType="number-pad" onChangeText={(text) => { setNum(text); }} />
-            </View>
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <Text style={styles.title}>Edit Profile</Text>
+                <View style={styles.underline} />
 
+                <View style={styles.profileImageContainer}>
+                  <TouchableOpacity
+                    onPress={showImageOptions}
+                    style={styles.imageWrapper}
+                  >
+                    <Image
+                      source={image ? { uri: image } : { uri: userData?.image }}
+                      style={styles.logo}
+                    />
+                    <View style={styles.editBadge}>
+                      <Ionicons name="camera" size={20} color="white" />
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={styles.changePhotoText}>Tap to change profile photo</Text>
+                </View>
 
-          </View>
+                <View style={styles.formContainer}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Username</Text>
+                    <View style={styles.inputWrapper}>
+                      <MaterialCommunityIcons name="account" size={24} color="#8B5E3C" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.inputbox}
+                        placeholder={userData?.username ? String(userData.username).toUpperCase() : "Enter username"}
+                        onChangeText={(text) => { setUsername(text); }}
+                        placeholderTextColor="#8B8B8B"
+                        autoCapitalize="none"
+                      />
+                    </View>
+                    {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+                  </View>
 
-          <View>
-            <View>
-              <Text style={styles.text}> Full Name</Text>
-              <TextInput style={styles.inputbox} placeholder={userData?.fullname} keyboardType="email-address" onChangeText={(text) => { setFullname(text); }} />
-            </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Full Name</Text>
+                    <View style={styles.inputWrapper}>
+                      <MaterialIcons name="person" size={24} color="#8B5E3C" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.inputbox}
+                        placeholder={userData?.fullname || "Enter full name"}
+                        onChangeText={(text) => { setFullname(text); }}
+                        placeholderTextColor="#8B8B8B"
+                      />
+                    </View>
+                    {errors.fullname && <Text style={styles.errorText}>{errors.fullname}</Text>}
+                  </View>
 
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Phone Number</Text>
+                    <View style={styles.inputWrapper}>
+                      <MaterialIcons name="phone" size={24} color="#8B5E3C" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.inputbox}
+                        placeholder={userData?.phone || "Enter phone number"}
+                        keyboardType="phone-pad"
+                        onChangeText={(text) => { setNum(text); }}
+                        placeholderTextColor="#8B8B8B"
+                      />
+                    </View>
+                    {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                  </View>
+                </View>
+              </View>
 
-          </View>
-        </View>
-        <SaveButton onPress={() => console.log("Saved!")} />
-        <ActionSheet
-          ref={actionSheetRef}
-          title={"Choose An Option"}
-          options={['Take By Camera 📷', 'From Gallery 🖼️', "Cancel"]}
-          cancelButtonIndex={2}
-          onPress={handleActionSheet}
-        />
+              <SaveButton />
+            </ScrollView>
 
-      </View>
-    </>
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={imageSourceModalVisible}
+              onRequestClose={() => setImageSourceModalVisible(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setImageSourceModalVisible(false)}>
+                <View style={styles.imageSourceModalOverlay}>
+                  <TouchableWithoutFeedback>
+                    <View style={styles.imageSourceModalContent}>
+                      <Text style={styles.imageSourceModalTitle}>Change Profile Picture</Text>
+
+                      <View style={styles.imageSourceOptions}>
+                        <TouchableOpacity
+                          style={styles.imageSourceOption}
+                          onPress={pickImageFromGallery}
+                        >
+                          <LinearGradient
+                            colors={['#8B5E3C', '#A87C5F']}
+                            style={styles.optionIconContainer}
+                          >
+                            <FontAwesome name="photo" size={28} color="white" />
+                          </LinearGradient>
+                          <Text style={styles.imageSourceOptionText}>Gallery</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.imageSourceOption}
+                          onPress={takePhotoWithCamera}
+                        >
+                          <LinearGradient
+                            colors={['#5D4037', '#8B6B61']}
+                            style={styles.optionIconContainer}
+                          >
+                            <FontAwesome name="camera" size={28} color="white" />
+                          </LinearGradient>
+                          <Text style={styles.imageSourceOptionText}>Camera</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.imageSourceCancelButton}
+                        onPress={() => setImageSourceModalVisible(false)}
+                      >
+                        <Text style={styles.imageSourceCancelText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
+          </LinearGradient>
+        </>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   )
 }
+
 const styles = StyleSheet.create({
-  container: {
+  gradientContainer: {
     flex: 1,
-    backgroundColor: 'white',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingBottom: 100,
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4A3222',
+    marginTop: 20,
+    marginBottom: 5,
+    fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'sans-serif-medium',
+  },
+  underline: {
+    height: 4,
+    backgroundColor: '#8B5E3C',
+    width: 100,
+    marginBottom: 30,
+    borderRadius: 2,
+  },
+  profileImageContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  imageWrapper: {
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 4,
+    borderColor: "#FFF",
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: '#8B5E3C',
+    borderRadius: 20,
+    padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  savetext: {
-    position: "absolute",
-    top: 25,
-    left: 78,
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "gold",
-  },
-  save: {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    top: 16,
-    left: 23,
-  },
-  confirm: {
-    width: 210,
-    height: 72.5,
-  },
-  inputbox: {
-    height: 40,
-    width: (Dimensions.get('window').width / 2.5) + 15,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 10,
-    backgroundColor: 'silver',
     shadowColor: '#000',
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  changePhotoText: {
+    marginTop: 10,
+    color: '#8B5E3C',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  formContainer: {
+    width: '100%',
     marginBottom: 20,
   },
-  gender: {
-    display: 'flex',
+  inputGroup: {
+    marginBottom: 22,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#5D4037',
+    paddingLeft: 5,
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 10,
-    backgroundColor: "silver",
-    height: 40,
-    width: 150,
-    elevation: 10,
+    borderColor: '#D7CCC8',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  back: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  inputIcon: {
+    marginLeft: 15,
+    marginRight: 5,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 100,
-    borderStyle: "dashed",
-    borderWidth: 4,
-    borderColor: "#674ea7",
+  inputbox: {
+    flex: 1,
+    height: 54,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#333',
   },
-  text: {
-    fontSize: 18,
-    color: 'black',
-  },
-  edit: {
-    width: 110,
-    height: 50,
-    backgroundColor: "#7e57c2",
-    borderColor: "#7e57c2",
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 120,
-    borderBottomRightRadius: 120,
-    textAlign: "center",
-    lineHeight: 40,
-    color: "white",
-    fontWeight: "bold",
-    fontFamily: "sans-serif",
-    fontSize: 17,
-    opacity: 0.7,
-    position: "absolute",
-    bottom: 0,
-    alignSelf: "center",
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
   },
   backButton: {
     position: 'absolute',
     left: 15,
-    top: 55,
+    top: 50,
     zIndex: 10,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#22b5e2',
-    borderRadius: 50,
-    elevation: 4,
-    position: 'absolute',
-    top: Dimensions.get('window').height - 120
-  },
-  iconContainer: {
-    position: 'relative',
-    marginRight: 10,
-  },
-  iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'white',
-    alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-  },
-  iconTab: {
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#8B5E3C',
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
     position: 'absolute',
-    top: -10,
-    left: 24,
-    width: 12,
-    height: 20,
-    borderRadius: 3,
-    backgroundColor: 'white',
-    zIndex: 1,
+    bottom: 30,
   },
-  text1: {
-    color: '#ffd700',
+  buttonText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 18,
   },
+  iconContainer: {
+    marginRight: 10,
+  },
+  imageSourceModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageSourceModalContent: {
+    width: width * 0.85,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  imageSourceModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 25,
+    color: '#4A3222',
+    fontFamily: Platform.OS === 'ios' ? 'Avenir-Heavy' : 'sans-serif-medium',
+  },
+  imageSourceOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 25,
+  },
+  imageSourceOption: {
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 15,
+    width: '40%',
+  },
+  optionIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  imageSourceOptionText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#5D4037',
+    fontWeight: '600',
+  },
+  imageSourceCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  imageSourceCancelText: {
+    fontSize: 16,
+    color: '#5D4037',
+    fontWeight: 'bold',
+  },
 })
-export default editprofile
+
+export default EditProfile;

@@ -10,8 +10,8 @@ import {
   RefreshControl,
   Animated,
 } from 'react-native';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { collection, getDocs, getDoc, doc, query, where } from 'firebase/firestore';
+import React, { useEffect, useState, useRef } from 'react';
+import { getDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
 import { MaterialIcons, FontAwesome, Ionicons, AntDesign, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,7 @@ interface Product {
   image?: string;
   description?: string;
   quantity?: number;
+  discount?: number;
 }
 
 const orders = () => {
@@ -86,7 +87,7 @@ const orders = () => {
       userOrders.forEach((order: { productId: string; quantity: number }) => {
         productMap.set(order.productId, (productMap.get(order.productId) || 0) + order.quantity);
       });
-      
+
       const productPromises = Array.from(productMap.keys()).map(async (productId) => {
         try {
           const productDoc = await getDoc(doc(db, "products", productId));
@@ -94,6 +95,7 @@ const orders = () => {
             const productData = productDoc.data();
             const quantity = productMap.get(productId) || 0;
             const price = productData.price || 0;
+            const discount = productData.discount || 0;
 
             return {
               id: productDoc.id,
@@ -101,7 +103,8 @@ const orders = () => {
               price: price,
               image: productData.image,
               description: productData.description,
-              quantity: quantity
+              quantity: quantity,
+              discount: discount
             };
           }
         } catch (error) {
@@ -114,7 +117,12 @@ const orders = () => {
         .filter(Boolean) as Product[];
 
       const total = fetchedProducts.reduce(
-        (acc, product) => acc + ((product.price || 0) * (product.quantity || 1)),
+        (acc, product) => {
+          const price = product.price || 0;
+          const quantity = product.quantity || 1;
+          const discount = product.discount || 0;
+          return acc + (price * quantity) - ((price * discount / 100) * quantity);
+        },
         0
       );
 
@@ -131,10 +139,6 @@ const orders = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchUserOrders();
-  };
-
-  const toggleExpand = (productId: string) => {
-    setExpandedProduct(expandedProduct === productId ? null : productId);
   };
 
   const navigateToProductDetail = (productId: string) => {
@@ -170,6 +174,13 @@ const orders = () => {
       extrapolate: 'clamp',
     });
 
+    const discountedPrice = item.price && item.discount
+      ? item.price - (item.price * item.discount / 100)
+      : item.price;
+
+    const subtotal = ((item.price || 0) * (item.quantity || 1));
+    const discountedSubtotal = subtotal - (subtotal * (item.discount || 0) / 100);
+
     return (
       <Animated.View style={{ opacity: itemOpacity, transform: [{ translateY: itemTranslateY }] }}>
         <TouchableOpacity
@@ -202,28 +213,55 @@ const orders = () => {
                 {item.description || 'No description available'}
               </Text>
 
-              <View style={styles.infoRow}>
-                <View style={styles.infoChip}>
-                  <FontAwesome name="dollar" size={14} color="#388E3C" />
-                  <Text style={styles.infoText}>${item.price?.toFixed(2)}</Text>
-                </View>
-                <View style={styles.infoChip}>
-                  <AntDesign name="tagso" size={14} color="#D32F2F" />
-                  <Text style={styles.infoText}>
-                    {item.quantity} {item.quantity === 1 ? 'item' : 'items'}
-                  </Text>
-                </View>
-              </View>
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailLabelContainer}>
+                    <FontAwesome name="tag" size={14} color="#795548" />
+                    <Text style={styles.detailLabel}>Price:</Text>
+                  </View>
 
-              <View style={styles.subtotalRow}>
-                <Text style={styles.subtotalLabel}>Subtotal:</Text>
-                <Text style={styles.subtotalValue}>
-                  ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                </Text>
+                  <View>
+                    {item.discount && item.discount > 0 ? (
+                      <View style={styles.discountContainer}>
+                        <Text style={styles.originalPrice}>${item.price?.toFixed(2)}</Text>
+                        <View style={styles.discountInfoContainer}>
+                          <Text style={styles.discountedPrice}>${discountedPrice?.toFixed(2)}</Text>
+                          <View style={styles.discountBadgeContainer}>
+                            <Text style={styles.discountBadgeText}>{item.discount}% OFF</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={styles.regularPrice}>${item.price?.toFixed(2)}</Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <View style={styles.detailLabelContainer}>
+                    <Ionicons name="cart-outline" size={15} color="#795548" />
+                    <Text style={styles.detailLabel}>Quantity:</Text>
+                  </View>
+                  <View style={styles.quantityBadge}>
+                    <Text style={styles.quantityText}>{item.quantity}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.subtotalContainer}>
+                  <Text style={styles.subtotalLabel}>Subtotal:</Text>
+                  {item.discount && item.discount > 0 ? (
+                    <View style={styles.subtotalValues}>
+                      <Text style={styles.originalSubtotal}>${subtotal.toFixed(2)}</Text>
+                      <Text style={styles.subtotalValue}>${discountedSubtotal.toFixed(2)}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.subtotalValue}>${subtotal.toFixed(2)}</Text>
+                  )}
+                </View>
               </View>
 
               <View style={styles.viewDetailsContainer}>
-                <Text style={styles.viewDetailsText}>View Details</Text>
+                <Text style={styles.viewDetailsText}>View Product Details</Text>
                 <Feather name="chevron-right" size={18} color="#555" />
               </View>
             </View>
@@ -234,7 +272,7 @@ const orders = () => {
   };
 
   return (
-    <>  
+    <>
       <Stack.Screen name="orders" options={{ headerShown: false }} />
       <LinearGradient
         colors={['white', '#FFE4C4']}
@@ -286,7 +324,7 @@ const orders = () => {
                 style={styles.shopButton}
                 onPress={() => {
                   animatePress();
-                  router.push('../(tabs)/home');
+                  router.replace('../(tabs)/home');
                 }}
                 activeOpacity={0.7}
               >
@@ -320,7 +358,6 @@ const orders = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  
   },
   header: {
     paddingTop: 60,
@@ -531,11 +568,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
   },
-  subtotalLabel: {
-    fontSize: 13,
-    color: '#757575',
-    marginRight: 6,
-  },
   subtotalValue: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -552,6 +584,111 @@ const styles = StyleSheet.create({
     color: '#616161',
     marginRight: 2,
     fontWeight: '500',
+  },
+  priceWithDiscountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  originalPrice: {
+    fontSize: 14,
+    color: '#777',
+    textDecorationLine: 'line-through',
+    marginRight: 5,
+  },
+  discountedPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#388E3C',
+  },
+  discountBadge: {
+    fontSize: 12,
+    color: '#e91e63',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  subtotalValues: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  originalSubtotal: {
+    fontSize: 13,
+    color: '#999',
+    textDecorationLine: 'line-through',
+    marginRight: 5,
+  },
+  detailsContainer: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  detailLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#795548',
+    fontWeight: '500',
+    marginLeft: 5,
+  },
+  regularPrice: {
+    fontSize: 15,
+    color: '#4E342E',
+    fontWeight: 'bold',
+  },
+  discountContainer: {
+    alignItems: 'flex-end',
+  },
+  discountInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  discountBadgeContainer: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 6,
+  },
+  discountBadgeText: {
+    fontSize: 10,
+    color: '#E53935',
+    fontWeight: 'bold',
+  },
+  quantityBadge: {
+    backgroundColor: '#EFEBE9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    minWidth: 36,
+    alignItems: 'center',
+  },
+  quantityText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#5D4037',
+  },
+  subtotalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  subtotalLabel: {
+    fontSize: 14,
+    color: '#5D4037',
+    fontWeight: '600',
   },
 });
 

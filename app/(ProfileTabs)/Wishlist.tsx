@@ -7,25 +7,25 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Alert,
   RefreshControl,
   Animated,
-  Dimensions
+  Dimensions,
+  Modal
 } from 'react-native';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { auth, db } from '../../Firebase/Firebase';
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { MaterialIcons, FontAwesome, Ionicons, AntDesign, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MiniAlert from './MiniAlert';
 
 interface Product {
   id: string;
   name: string;
   price: number;
   image: string;
+  discount?: number;
 }
-
-const { width } = Dimensions.get('window');
 
 const Wishlist = () => {
   const [favorites, setFavorites] = useState<Product[]>([]);
@@ -33,6 +33,11 @@ const Wishlist = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const userId = auth.currentUser?.uid;
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   const emptyStateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -55,10 +60,6 @@ const Wishlist = () => {
 
   const formatPrice = (price: number) => {
     return price ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
-  };
-
-  const calculateTotalValue = () => {
-    return favorites.reduce((sum, item) => sum + (item.price || 0), 0);
   };
 
   const runItemAnimation = () => {
@@ -148,37 +149,36 @@ const Wishlist = () => {
     fetchFavorites();
   }, [userId]);
 
-  const removeFromFavorites = async (productId: string, productName: string) => {
-    Alert.alert(
-      "Remove from Favorites",
-      `Are you sure you want to remove ${productName} from your favorites?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const userDocRef = doc(db, "Users", userId as string);
+  const confirmRemoveFromFavorites = (product: Product) => {
+    setSelectedProduct(product);
+    setDeleteModalVisible(true);
+  };
 
-              await updateDoc(userDocRef, {
-                Fav: arrayRemove(productId)
-              });
+  const removeFromFavorites = async () => {
+    if (!selectedProduct || !userId) return;
 
-              setFavorites(prev => prev.filter(item => item.id !== productId));
+    setDeleteLoading(true);
+    try {
+      const userDocRef = doc(db, "Users", userId);
 
-              Alert.alert("Removed", `${productName} has been removed from your favorites.`);
-            } catch (err) {
-              console.error("Error removing from favorites:", err);
-              Alert.alert("Error", "Failed to remove item from favorites");
-            }
-          }
-        }
-      ]
-    );
+      await updateDoc(userDocRef, {
+        Fav: arrayRemove(selectedProduct.id)
+      });
+
+      setFavorites(prev => prev.filter(item => item.id !== selectedProduct.id));
+      setAlertMsg(`${String(selectedProduct.name).split(' ').slice(0, 2).join(' ')} has been removed from your favorites`);
+      setAlertType('success');
+
+      setTimeout(() => {
+        setDeleteModalVisible(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Error removing from favorites:", err);
+      setAlertMsg("Failed to remove item from favorites");
+      setAlertType('error');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const navigateToProduct = (productId: string) => {
@@ -199,6 +199,12 @@ const Wishlist = () => {
       outputRange: [50, 0],
       extrapolate: 'clamp',
     });
+
+    const discountedPrice = item.discount && item.discount > 0
+      ? item.price - (item.price * item.discount / 100)
+      : item.price;
+
+    const hasDiscount = item.discount && item.discount > 0;
 
     return (
       <Animated.View style={{
@@ -234,7 +240,24 @@ const Wishlist = () => {
               <View style={styles.infoRow}>
                 <View style={styles.infoChip}>
                   <FontAwesome name="dollar" size={14} color="#388E3C" />
-                  <Text style={styles.infoText}>{formatPrice(item.price)} EGP</Text>
+
+                  <View style={styles.priceContainer}>
+                    {hasDiscount ? (
+                      <>
+                        <View style={styles.priceRow}>
+                          <Text style={styles.originalPrice}>{formatPrice(item.price)} EGP</Text>
+                          <View style={styles.discountTag}>
+                            <Text style={styles.discountValue}>-{item.discount}%</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.discountedPrice}>
+                          {formatPrice(discountedPrice)} EGP
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.regularPrice}>{formatPrice(item.price)} EGP</Text>
+                    )}
+                  </View>
                 </View>
               </View>
 
@@ -247,7 +270,7 @@ const Wishlist = () => {
 
           <TouchableOpacity
             style={styles.removeButton}
-            onPress={() => removeFromFavorites(item.id, item.name)}
+            onPress={() => confirmRemoveFromFavorites(item)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
@@ -267,13 +290,66 @@ const Wishlist = () => {
         }}
       />
       <LinearGradient
-        colors={['#FFF0E1', '#FFE4C4']}
+        colors={['white', '#FFE4C4']}
         style={styles.container}
       >
+        {alertMsg && (
+          <MiniAlert
+            message={alertMsg}
+            type={alertType}
+            onHide={() => setAlertMsg(null)}
+          />
+        )}
+
+        <Modal
+          visible={deleteModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setDeleteModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <MaterialIcons name="delete" size={36} color="#FF6B6B" />
+                <Text style={styles.modalTitle}>
+                  Remove from Favorites
+                </Text>
+              </View>
+
+              <Text style={styles.modalText}>
+                Are you sure you want to remove{' '}
+                <Text style={{ fontWeight: 'bold' }}>{selectedProduct?.name}</Text>{' '}
+                from your favorites?
+              </Text>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setDeleteModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={removeFromFavorites}
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>Remove</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => { router.push('../(tabs)/profile') }}
+            onPress={() => { router.back() }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back-circle-outline" size={36} color="#5D4037" />
@@ -322,7 +398,7 @@ const Wishlist = () => {
                 style={styles.shopButton}
                 onPress={() => {
                   animatePress();
-                  router.push('../(tabs)/home');
+                  router.replace('../(tabs)/home');
                 }}
                 activeOpacity={0.7}
               >
@@ -613,6 +689,117 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FF6B6B',
     marginLeft: 6,
+  },
+  priceContainer: {
+    marginLeft: 5,
+    justifyContent: 'center',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    flexWrap: 'wrap',
+  },
+  originalPrice: {
+    fontSize: 13,
+    color: '#777',
+    textDecorationLine: 'line-through',
+    marginRight: 6,
+  },
+  discountedPrice: {
+    fontSize: 14.5,
+    fontWeight: 'bold',
+    color: '#388E3C',
+  },
+  regularPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#616161',
+  },
+  discountTag: {
+    backgroundColor: '#fce4ec',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  discountValue: {
+    fontSize: 11,
+    color: '#e91e63',
+    fontWeight: 'bold',
+  },
+  priceWithDiscountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+    flexWrap: 'wrap',
+  },
+  discountBadge: {
+    fontSize: 12,
+    color: '#e91e63',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f1f2f6',
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: '#555',
+    fontWeight: 'bold',
+  },
+  confirmButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

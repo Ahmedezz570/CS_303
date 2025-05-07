@@ -23,13 +23,13 @@ const WelcomeScreen = () => {
           }
         } else {
           setTimeout(() => {
-            router.push('/Login');
+            router.replace('/Login');
           }, 3000);
         }
       } catch (error) {
         console.error('Error reading AsyncStorage:', error);
         setTimeout(() => {
-          router.push('/Login');
+          router.replace('/Login');
         }, 3000);
       }
     };
@@ -44,9 +44,9 @@ const WelcomeScreen = () => {
         <View style={styles.content}>
           <Image source={require('../assets/images/pngwing.com.png')} style={styles.logo} />
           <Text style={styles.title}>SUPERMALL</Text>
-          <ActivityIndicator 
-            size="large" 
-            color="#4A3222" 
+          <ActivityIndicator
+            size="large"
+            color="#4A3222"
             style={styles.loader}
           />
         </View>
@@ -58,14 +58,14 @@ const WelcomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center', 
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FAE5D3',
     paddingHorizontal: 20,
   },
   content: {
     bottom: 50,
-    alignItems: 'center', 
+    alignItems: 'center',
   },
   title: {
     fontSize: 38,

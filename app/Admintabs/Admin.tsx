@@ -8,17 +8,25 @@ import {
     ActivityIndicator,
     RefreshControl
 } from 'react-native';
-import { getDocs, collection, getDoc, doc } from 'firebase/firestore';
+import { getDocs, collection } from 'firebase/firestore';
 import { auth, db, getUserData } from '../../Firebase/Firebase';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import MiniAlert from '../(ProfileTabs)/MiniAlert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+
+interface OrderItem {
+    id: string;
+    productId: string;
+    quantity: number;
+}
+
 interface User {
     id?: string;
     isAdmin?: boolean;
-    UserOrder?: string[];
     username?: string;
+    Orders?: OrderItem[];
 }
 
 interface Product {
@@ -26,6 +34,7 @@ interface Product {
     category?: string;
     price?: number;
     name?: string;
+    discount?: number;
 }
 
 const Admin = () => {
@@ -52,25 +61,32 @@ const Admin = () => {
                 id: d.id,
                 ...d.data()
             } as User));
-            setUsers(usersData);
 
             const productsData = productsSnap.docs.map(d => ({
                 id: d.id,
                 ...d.data()
             } as Product));
+
+            setUsers(usersData);
             setProducts(productsData);
 
             let orderCount = 0;
             let totalAmount = 0;
-
             for (const user of usersData) {
-                if (user.UserOrder && Array.isArray(user.UserOrder)) {
-                    orderCount += user.UserOrder.length;
+                if (user.Orders && Array.isArray(user.Orders)) {
+                    for (const orderItem of user.Orders) {
+                        if (orderItem &&
+                            typeof orderItem === 'object' &&
+                            'productId' in orderItem &&
+                            'quantity' in orderItem) {
 
-                    for (const productId of user.UserOrder) {
-                        const product = productsData.find(p => p.id === productId);
-                        if (product && product.price) {
-                            totalAmount += product.price;
+                            const quantity = Number(orderItem.quantity) || 0;
+                            orderCount += quantity;
+
+                            const product = productsData.find(p => p.id === orderItem.productId);
+                            if (product && product.price && product.discount) {
+                                totalAmount += (product.price * quantity) - (product.price * product.discount / 100) * quantity;
+                            }
                         }
                     }
                 }
@@ -80,6 +96,8 @@ const Admin = () => {
             setTotalSpent(totalAmount);
         } catch (err) {
             console.error('Error fetching data:', err);
+            setAlertMessage("Error loading data. Please try again.");
+            setAlertType("error");
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -104,8 +122,8 @@ const Admin = () => {
     }, []);
 
     const logout = async () => {
-       await auth.signOut();
-         await AsyncStorage.removeItem('DataForUser');
+        await auth.signOut();
+        await AsyncStorage.removeItem('DataForUser');
         setAlertMessage("Logged out successfully");
         setAlertType("error");
         setTimeout(() => {
@@ -145,15 +163,13 @@ const Admin = () => {
         <>
             <Stack.Screen name="Admin" options={{ headerShown: false }} />
             <View style={styles.container}>
-                {
-                    alertMessage && (
-                        <MiniAlert
-                            message={alertMessage}
-                            type={alertType}
-                            onHide={() => setAlertMessage(null)}
-                        />
-                    )
-                }
+                {alertMessage && (
+                    <MiniAlert
+                        message={alertMessage}
+                        type={alertType}
+                        onHide={() => setAlertMessage(null)}
+                    />
+                )}
                 <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
                     <Ionicons name="log-out-outline" size={24} color="#fff" />
                 </TouchableOpacity>
@@ -180,67 +196,80 @@ const Admin = () => {
                             Welcome, {String(adminName).toUpperCase()} 👋
                         </Text>
                     </View>
-
                     <View style={styles.card}>
-                        <View style={styles.sectionHeader}>
-                            <MaterialIcons name="people-alt" size={24} color="#4a90e2" />
-                            <Text style={styles.sectionTitle}>Users</Text>
-                        </View>
-                        <View style={styles.innerRow}>
-                            <View style={[styles.halfCard, styles.cardWithIcon]}>
-                                <FontAwesome name="users" size={20} color="#4a90e2" />
-                                <Text style={styles.cardLabel}>Total Users</Text>
-                                <Text style={styles.cardValue}>{totalUsers}</Text>
+                        <LinearGradient
+                            colors={['#D1F4FF', '#f5ffff']}
+                            style={styles.cardGradient}
+                        >
+                            <View style={styles.sectionHeader}>
+                                <MaterialIcons name="people-alt" size={24} color="#4a90e2" />
+                                <Text style={styles.sectionTitle}>Users</Text>
                             </View>
-                            <View style={[styles.halfCard, styles.cardWithIcon]}>
-                                <Ionicons name="shield-checkmark" size={20} color="#4a90e2" />
-                                <Text style={styles.cardLabel}>Admins</Text>
-                                <Text style={styles.cardValue}>{adminCount}</Text>
+                            <View style={styles.innerRow}>
+                                <View style={[styles.halfCard, styles.cardWithIcon]}>
+                                    <FontAwesome name="users" size={20} color="#4a90e2" />
+                                    <Text style={styles.cardLabel}>Total Users</Text>
+                                    <Text style={styles.cardValue}>{totalUsers}</Text>
+                                </View>
+                                <View style={[styles.halfCard, styles.cardWithIcon]}>
+                                    <Ionicons name="shield-checkmark" size={20} color="#4a90e2" />
+                                    <Text style={styles.cardLabel}>Admins</Text>
+                                    <Text style={styles.cardValue}>{adminCount}</Text>
+                                </View>
                             </View>
-                        </View>
+                        </LinearGradient>
+                    </View>
+                    <View style={styles.card}>
+                        <LinearGradient
+                            colors={['#D1F4FF', '#f5ffff']}
+                            style={styles.cardGradient}
+                        >
+                            <View style={styles.sectionHeader}>
+                                <MaterialIcons name="shopping-cart" size={24} color="#4a90e2" />
+                                <Text style={styles.sectionTitle}>Sales Summary</Text>
+                            </View>
+                            <View style={styles.innerRow}>
+                                <View style={[styles.halfCard, styles.cardWithIcon]}>
+                                    <Ionicons name="cart" size={20} color="#4a90e2" />
+                                    <Text style={styles.cardLabel}>Total Items Ordered</Text>
+                                    <Text style={styles.cardValue}>{totalOrderedItems}</Text>
+                                </View>
+                                <View style={[styles.halfCard, styles.cardWithIcon]}>
+                                    <FontAwesome name="dollar" size={20} color="#4a90e2" />
+                                    <Text style={styles.cardLabel}>Total Revenue</Text>
+                                    <Text style={styles.cardValue}>${totalSpent.toFixed(2)}</Text>
+                                </View>
+                            </View>
+                        </LinearGradient>
                     </View>
 
                     <View style={styles.card}>
-                        <View style={styles.sectionHeader}>
-                            <MaterialIcons name="shopping-cart" size={24} color="#4a90e2" />
-                            <Text style={styles.sectionTitle}>Sales Summary</Text>
-                        </View>
-                        <View style={styles.innerRow}>
-                            <View style={[styles.halfCard, styles.cardWithIcon]}>
-                                <Ionicons name="cart" size={20} color="#4a90e2" />
-                                <Text style={styles.cardLabel}>Total Items Ordered</Text>
-                                <Text style={styles.cardValue}>{totalOrderedItems}</Text>
+                        <LinearGradient
+                            colors={['#D1F4FF', '#f5ffff']}
+                            style={styles.cardGradient}
+                        >
+                            <View style={styles.sectionHeader}>
+                                <MaterialCommunityIcons name="package-variant" size={24} color="#4a90e2" />
+                                <Text style={styles.sectionTitle}>Products by Category</Text>
+                                <Text style={styles.totalProductsCount}>Total Products: {products.length}</Text>
                             </View>
-                            <View style={[styles.halfCard, styles.cardWithIcon]}>
-                                <FontAwesome name="dollar" size={20} color="#4a90e2" />
-                                <Text style={styles.cardLabel}>Total Revenue</Text>
-                                <Text style={styles.cardValue}>${totalSpent.toFixed(2)}</Text>
+                            <View style={styles.wrap}>
+                                {productCategories.map((category, i) => {
+                                    const count = categorizedProducts[category.dbName] || 0;
+                                    return (
+                                        <View key={i} style={[styles.categoryCard, styles.cardWithIcon]}>
+                                            <MaterialCommunityIcons
+                                                name={category.icon as any}
+                                                size={24}
+                                                color="#4a90e2"
+                                            />
+                                            <Text style={styles.categoryLabel}>{category.name}</Text>
+                                            <Text style={styles.categoryValue}>{count}</Text>
+                                        </View>
+                                    );
+                                })}
                             </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.card}>
-                        <View style={styles.sectionHeader}>
-                            <MaterialCommunityIcons name="package-variant" size={24} color="#4a90e2" />
-                            <Text style={styles.sectionTitle}>Products by Category</Text>
-                            <Text style={styles.totalProductsCount}>Total Products: {products.length}</Text>
-                        </View>
-                        <View style={styles.wrap}>
-                            {productCategories.map((category, i) => {
-                                const count = categorizedProducts[category.dbName] || 0;
-                                return (
-                                    <View key={i} style={[styles.categoryCard, styles.cardWithIcon]}>
-                                        <MaterialCommunityIcons
-                                            name={category.icon as any}
-                                            size={24}
-                                            color="#4a90e2"
-                                        />
-                                        <Text style={styles.categoryLabel}>{category.name}</Text>
-                                        <Text style={styles.categoryValue}>{count}</Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
+                        </LinearGradient>
                     </View>
                 </ScrollView>
             </View>
@@ -295,7 +324,6 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
         borderRadius: 10,
-        padding: 16,
         marginHorizontal: 15,
         marginBottom: 15,
         elevation: 8,
@@ -305,7 +333,6 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     sectionHeader: {
-        // flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16
     },
@@ -319,7 +346,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#4a90e2',
-        // marginLeft: 'auto',
     },
     innerRow: {
         flexDirection: 'row',
@@ -376,7 +402,11 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         gap: 10
-    }
+    },
+    cardGradient: {
+        padding: 20,
+        borderRadius: 10,
+    },
 });
 
 export default Admin;

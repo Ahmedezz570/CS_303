@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ToastAndroid, ActivityIndicator , ScrollView} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator, ToastAndroid, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
 import { FontAwesome } from '@expo/vector-icons';
+import MiniAlert from '../(ProfileTabs)/MiniAlert';
 
 
 const AddProduct = () => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const currentUser = auth.currentUser;
+  const [alertMessage, setAlertMessage] = useState(null);
+  const [alertType, setAlertType] = useState('success');
   const [productDetails, setProductDetails] = useState({
     name: '',
     image: '',
@@ -64,7 +67,8 @@ const AddProduct = () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'You need to allow camera access to take photos.');
+      setAlertMessage('You need to allow camera access to take photos.');
+      setAlertType('error');
       return;
     }
 
@@ -88,12 +92,24 @@ const AddProduct = () => {
 
   const addButton = async () => {
     if (!productDetails.image) {
-      Alert.alert("Image Required", "Please upload an image before submitting.");
+      setAlertMessage("Please upload an image before submitting.");
+      setAlertType('error');
       return;
     }
+    console.log('Product Details:', productDetails);
+    if (!productDetails.name || !productDetails.category || !productDetails.description || !productDetails.price || !productDetails.discount) {
+      setAlertMessage("Please fill in all fields.");
+      setAlertType('error');
+      return;
+    }
+
     setLoading(true);
     try {
-      const newProduct = { ...productDetails };
+      const newProduct = {
+        ...productDetails,
+        price: Number(productDetails.price),
+        discount: Number(productDetails.discount),
+      };
       await addDoc(collection(db, 'products'), newProduct);
 
       ToastAndroid.showWithGravityAndOffset(
@@ -116,7 +132,8 @@ const AddProduct = () => {
       });
       setImage(null);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add product');
+      setAlertMessage('Failed to add product');
+      setAlertType('error');
       console.error('Error adding product: ', error);
     } finally {
       setLoading(false);
@@ -125,99 +142,107 @@ const AddProduct = () => {
 
   return (
     <>
-    <ScrollView>
-    <View style={styles.container}>
-      <Text style={styles.header}>Add Product</Text>
+      <ScrollView>
+        <View style={styles.container}>
+          {alertMessage && (
+            <MiniAlert
+              message={alertMessage}
+              type={alertType}
+              onHide={() => setAlertMessage(null)}
+            />
+          )}
 
-      <Text style={styles.label}>Product Title</Text>
-      <TextInput
-        style={styles.input}
-        value={productDetails.name}
-        onChangeText={(text) => changeHandler('name', text)}
-        placeholder="Enter here"
-      />
+          <Text style={styles.header}>Add Product</Text>
 
-      <Text style={styles.label}>Product Category</Text>
-      <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={productDetails.category}
-          onValueChange={(itemValue) => changeHandler('category', itemValue)}
-          style={{ color: '#000' }}
-        >
-          <Picker.Item label="Select a category" value="" />
-          <Picker.Item label="Mobile" value="Mobile" />
-          <Picker.Item label="Computers" value="Computers" />
-          <Picker.Item label="TVs" value="TVs" />
-          <Picker.Item label="Men" value="Men" />
-          <Picker.Item label="Women" value="Women" />
-          <Picker.Item label="Kids" value="Kids" />
-          <Picker.Item label="Other" value="Other" />
-        </Picker>
-      </View>
+          <Text style={styles.label}>Product Title</Text>
+          <TextInput
+            style={styles.input}
+            value={productDetails.name}
+            onChangeText={(text) => changeHandler('name', text)}
+            placeholder="Enter here"
+          />
 
-      <Text style={styles.label}>Product Description</Text>
-      <TextInput
-        style={styles.input}
-        value={productDetails.description}
-        onChangeText={(text) => changeHandler('description', text)}
-        placeholder="Enter here"
-      />
-
-      <Text style={styles.label}>Product Price</Text>
-      <TextInput
-        style={styles.input}
-        value={productDetails.price}
-        onChangeText={(text) => changeHandler('price', text)}
-        keyboardType="numeric"
-        placeholder="Enter here"
-      />
-      <Text style={styles.label}>Product Discount</Text>
-      <TextInput
-        style={styles.input}
-        value={productDetails.discount}
-        onChangeText={(text) => changeHandler('discount', text)}
-        keyboardType="numeric"
-        placeholder="Enter here"
-      />
-
-      {image ? (
-        <View style={{ alignItems: 'center', marginTop: 15 }}>
-          <View>
-            <Image source={{ uri: image }} style={styles.image} />
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => {
-                setImage(null);
-                setProductDetails({ ...productDetails, image: '' });
-              }}
+          <Text style={styles.label}>Product Category</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={productDetails.category}
+              onValueChange={(itemValue) => changeHandler('category', itemValue)}
+              style={{ color: '#000' }}
             >
-              <FontAwesome name="close" size={20} color="white" />
-            </TouchableOpacity>
+              <Picker.Item label="Select a category" value="" />
+              <Picker.Item label="Mobile" value="Mobile" />
+              <Picker.Item label="Computers" value="Computers" />
+              <Picker.Item label="TVs" value="TVs" />
+              <Picker.Item label="Men" value="Men" />
+              <Picker.Item label="Women" value="Women" />
+              <Picker.Item label="Kids" value="Kids" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
           </View>
-        </View>
-      ) : (
-        <View style={styles.imageButtonsContainer}>
-          <TouchableOpacity onPress={pickImageFromLibrary} style={styles.imagePicker}>
-            <FontAwesome name="photo" size={30} color="#aaa" />
-            <Text style={styles.optionText}>From Gallery</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity onPress={takePhotoWithCamera} style={styles.imagePicker}>
-            <FontAwesome name="camera" size={30} color="#aaa" />
-            <Text style={styles.optionText}>Take Photo</Text>
+          <Text style={styles.label}>Product Description</Text>
+          <TextInput
+            style={styles.input}
+            value={productDetails.description}
+            onChangeText={(text) => changeHandler('description', text)}
+            placeholder="Enter here"
+          />
+
+          <Text style={styles.label}>Product Price</Text>
+          <TextInput
+            style={styles.input}
+            value={productDetails.price}
+            onChangeText={(text) => changeHandler('price', text)}
+            keyboardType="numeric"
+            placeholder="Enter here"
+          />
+          <Text style={styles.label}>Product Discount</Text>
+          <TextInput
+            style={styles.input}
+            value={productDetails.discount}
+            onChangeText={(text) => changeHandler('discount', text)}
+            keyboardType="numeric"
+            placeholder="Enter here"
+          />
+
+          {image ? (
+            <View style={{ alignItems: 'center', marginTop: 15 }}>
+              <View>
+                <Image source={{ uri: image }} style={styles.image} />
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setImage(null);
+                    setProductDetails({ ...productDetails, image: '' });
+                  }}
+                >
+                  <FontAwesome name="close" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.imageButtonsContainer}>
+              <TouchableOpacity onPress={pickImageFromLibrary} style={styles.imagePicker}>
+                <FontAwesome name="photo" size={30} color="#aaa" />
+                <Text style={styles.optionText}>From Gallery</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={takePhotoWithCamera} style={styles.imagePicker}>
+                <FontAwesome name="camera" size={30} color="#aaa" />
+                <Text style={styles.optionText}>Take Photo</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity onPress={addButton} style={styles.button} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <Text style={styles.buttonText}>Add</Text>
+            )}
           </TouchableOpacity>
         </View>
-      )}
-
-      <TouchableOpacity onPress={addButton} style={styles.button} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator size="small" color="#000" />
-        ) : (
-          <Text style={styles.buttonText}>Add</Text>
-        )}
-      </TouchableOpacity>
-    </View>
-    </ScrollView>
+      </ScrollView>
     </>
   );
 };
@@ -262,7 +287,14 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   button: {
-    backgroundColor: '#f5e1d2',
+    borderWidth: 1,
+    borderColor: '#add8e6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+    backgroundColor: '#f0f8ff',
     padding: 15,
     borderRadius: 20,
     marginTop: 20,
