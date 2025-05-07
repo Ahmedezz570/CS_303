@@ -33,7 +33,9 @@ const ProductDetails = () => {
             return { label, data };
         }).filter(item => item.label && item.data);
     };
-
+    const applyDiscount = (price , discountPercentage ) => {
+        return Math.floor(price - (price * discountPercentage) / 100);
+      };
     useEffect(() => {
         const getProduct = async () => {
             try {
@@ -111,10 +113,10 @@ const handleAddToCart = async () => {
       await setDoc(cartDocRef, {
         productId: id,
         quantity: 1,
+        newPrice :  applyDiscount(product?.price , product?.discount),
       });
     }
-
-    router.push('/cart');
+console.log(`Product ${id} added to cart`); ;
   } catch (error) {
     console.error("Error adding to cart:", error);
     Alert.alert("Error", "Failed to add product to cart.");
@@ -158,7 +160,8 @@ const handleAddToCart = async () => {
 
                 <View style={styles.productHeader}>
                     <Text style={styles.name}>{product?.name}</Text>
-                    <Text style={styles.price1}>{formatPrice(product?.price)} EGP</Text>
+                    <Text style={{  textDecorationLine: "line-through", }}>{formatPrice(product?.price)} EGP</Text>
+                    <Text style={styles.price1}>{formatPrice(applyDiscount(product?.price , product?.discount))} EGP</Text>
 
                     <View style={styles.ratingRow}>
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -193,14 +196,14 @@ const handleAddToCart = async () => {
                         <Text style={styles.description}>{product?.description}</Text>
                     )}
                 </View>
-                <Review productId={id} />
+                <Review key={id} productId={id} />
             </ScrollView>
 
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.button} onPress={handleAddToCart} activeOpacity={0.8}>
                     <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>Total Price</Text>
-                        <Text style={styles.price}>{formatPrice(product?.price)} EGP</Text>
+                        <Text style={styles.price}>{formatPrice (applyDiscount(product?.price , product?.discount))} EGP</Text>
                     </View>
                     <View style={styles.addCartContainer}>
                         <Ionicons name="cart-outline" size={20} color="#333" style={{ marginRight: 8 }} />
@@ -292,6 +295,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     price1: {
+      
         fontSize: 22,
         color: '#2E7D32',
         fontWeight: 'bold',
@@ -395,6 +399,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     price: {
+        
         fontSize: 18,
         color: '#333',
         fontWeight: 'bold',

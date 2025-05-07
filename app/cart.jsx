@@ -130,7 +130,9 @@ const CartScreen = () => {
         Alert.alert("Error", "Could not complete checkout. Please try again.");
     }
 };
-
+const applyDiscount = (price , discountPercentage ) => {
+  return Math.floor(price - (price * discountPercentage) / 100);
+};
 if (isCheckoutComplete) {
   return (
     <View style={{  backgroundColor: 'white',
@@ -153,7 +155,7 @@ if (isCheckoutComplete) {
   );
 }
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + applyDiscount(item.price,item.discount)* item.quantity, 0);
   const shippingCost = cart.length > 0 ? 50 : 0;
   const tax = 0;
   let total = subtotal + shippingCost + tax;
@@ -204,8 +206,8 @@ if (isCheckoutComplete) {
             </TouchableOpacity>
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.details}>Size - {item.size}  Color - {item.color}</Text>
-              <Text style={styles.price}>EGP{item.price * item.quantity}</Text>
+              {/* <Text style={styles.details}>Size - {item.size}  Color - {item.color}</Text> */}
+              <Text style={styles.price}>EGP{applyDiscount(item.price ,item.discount)* item.quantity}</Text>
             </View>
             <View style={styles.quantityContainer}>
               <TouchableOpacity onPress={() => updateQuantity(item.id, 'decrease')} style={styles.quantityButton}>
@@ -321,7 +323,7 @@ const styles = StyleSheet.create({
   info: { flex: 1, minWidth: '40%' },
   name: { fontSize: 16, fontWeight: 'bold' },
   details: { fontSize: 14, color: 'gray' },
-  price: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  price: { fontSize: 16, fontWeight: 'bold', color: 'red'   ,  position: 'relative', top: 10},
   quantityContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 },
   quantityButton: { backgroundColor: '#ddd', padding: 5, borderRadius: 5 },
   quantityText: { fontSize: 18, fontWeight: 'bold' },

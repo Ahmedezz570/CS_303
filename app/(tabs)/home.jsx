@@ -101,7 +101,7 @@ const HomePage = () => {
   const Item = ({ item }) => {
     const router = useRouter();
   
-    const [randomDiscount] = useState(Math.floor(Math.random() * 41) + 10);
+    
     return (
       <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
   <View style={styles.card}>
@@ -110,7 +110,7 @@ const HomePage = () => {
       <Image source={{ uri: item.image }} style={styles.image} />
       <View style={styles.discountContainer}>
               <Icon name="tag" size={14} color="#fff" />
-              <Text style={styles.discountText}>{randomDiscount}% OFF</Text>
+              <Text style={styles.discountText}>{item.discount}% OFF</Text>
             </View>
       <TouchableOpacity
         style={{
@@ -133,7 +133,7 @@ const HomePage = () => {
 
     <View style={styles.priceContainer}>
       <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
-      <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , randomDiscount))} EGP</Text>
+      <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , item.discount))} EGP</Text>
     </View>
 
     
