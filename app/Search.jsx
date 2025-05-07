@@ -94,7 +94,7 @@ const SearchFilterScreen = () => {
     const sortedData = [...filteredData];
 
     if (option === "Newest") {
-      sortedData.sort((a, b) => b.timestamp - a.timestamp);
+      sortedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } else if (option === "Lowest - Highest Price") {
       sortedData.sort((a, b) => a.price - b.price);
     } else if (option === "Highest - Lowest Price") {

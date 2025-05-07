@@ -6,14 +6,19 @@ const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 24;
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {db} from '../../Firebase/Firebase';
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot , arrayUnion} from "firebase/firestore";
 import { MaterialIcons } from '@expo/vector-icons';
 import {auth} from "../../Firebase/Firebase";
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+
 const HomePage = () => {
   const [products, setProducts] = useState([]);
+  const currentUser = auth.currentUser;
+  console.log(currentUser);
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
+      await AsyncStorage.removeItem('DataForUser');
       router.replace("/Login"); 
       Alert.alert("Logout successful");
     } catch (error) {
@@ -38,10 +43,65 @@ const HomePage = () => {
   const applyDiscount = (price , discountPercentage ) => {
     return Math.floor(price - (price * discountPercentage) / 100);
   };
+
+  
+  
+  const handleAddToCart = async (item) => {
+    console.log("Adding to cart:", item.docId);
+    console.log("Adding to cart:", item.price);
+  
+    if (!currentUser) {
+      Alert.alert("Error", "User not logged in.");
+      return;
+    }
+  
+    try {
+      const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', item.docId);
+      const cartDocSnap = await getDoc(cartDocRef);
+  
+      if (cartDocSnap.exists()) {
+        
+        await updateDoc(cartDocRef, {
+          quantity: increment(1),
+         
+        });
+      } else {
+       
+        await setDoc(cartDocRef, {
+          productId: item.docId,
+          quantity: 1,
+          createdAt: new Date(),
+        });
+      }
+  
+      Alert.alert("Success", "Product added to cart!");
+  
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      Alert.alert("Error", "Failed to add product to cart.");
+    }
+  };
+  
+  const handleFavorite = async (item) => {
+    try {
+        const userDocRef = doc(db, "Users", auth.currentUser.uid);
+
+        
+            await updateDoc(userDocRef, {
+                Fav: arrayUnion(item.docId),
+            });
+            
+            Alert.alert("Favorite", `${item?.name} has been added to favorites!`);
+        
+    } catch (error) {
+        console.error("Error updating favorites:", error);
+        Alert.alert("Error", "Could not update favorites. Please try again.");
+    }
+};
   const Item = ({ item }) => {
     const router = useRouter();
   
-    const [randomDiscount] = useState(Math.floor(Math.random() * 41) + 10);
+    
     return (
       <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
   <View style={styles.card}>
@@ -50,7 +110,7 @@ const HomePage = () => {
       <Image source={{ uri: item.image }} style={styles.image} />
       <View style={styles.discountContainer}>
               <Icon name="tag" size={14} color="#fff" />
-              <Text style={styles.discountText}>{randomDiscount}% OFF</Text>
+              <Text style={styles.discountText}>{item.discount}% OFF</Text>
             </View>
       <TouchableOpacity
         style={{
@@ -62,7 +122,7 @@ const HomePage = () => {
           borderRadius: 20,
         }}
         onPress={() => {
-          console.log('Add to favorites', item.docId);
+          handleFavorite(item);
         }}
       >
         <Icon name="heart" size={20} color="#fff" />
@@ -72,8 +132,8 @@ const HomePage = () => {
     <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
 
     <View style={styles.priceContainer}>
-      <Text style={styles.oldPrice}>{item.price} EGP</Text>
-      <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , randomDiscount))} EGP</Text>
+      <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
+      <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , item.discount))} EGP</Text>
     </View>
 
     
@@ -89,7 +149,7 @@ const HomePage = () => {
         width:"100%"
       }}
       onPress={() => {
-        console.log('Add to cart', item.docId);
+        handleAddToCart(item)
       }}
     >
       <Icon name="shopping-cart" size={20} color="#fff" />

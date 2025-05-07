@@ -73,7 +73,8 @@ const orders = () => {
       }
 
       const userData = userDoc.data();
-      const userOrders = userData.UserOrder || [];
+      console.log("User data:", userData);
+      const userOrders = userData.Orders || [];
 
       if (!userOrders.length) {
         setProducts([]);
@@ -82,10 +83,10 @@ const orders = () => {
       }
 
       const productMap = new Map<string, number>();
-      userOrders.forEach((productId: string) => {
-        productMap.set(productId, (productMap.get(productId) || 0) + 1);
+      userOrders.forEach((order: { productId: string; quantity: number }) => {
+        productMap.set(order.productId, (productMap.get(order.productId) || 0) + order.quantity);
       });
-
+      
       const productPromises = Array.from(productMap.keys()).map(async (productId) => {
         try {
           const productDoc = await getDoc(doc(db, "products", productId));
@@ -236,7 +237,7 @@ const orders = () => {
     <>  
       <Stack.Screen name="orders" options={{ headerShown: false }} />
       <LinearGradient
-        colors={['#FFF0E1', '#FFE4C4']}
+        colors={['white', '#FFE4C4']}
         style={styles.container}
       >
         <View style={styles.header}>
@@ -319,6 +320,7 @@ const orders = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  
   },
   header: {
     paddingTop: 60,

@@ -30,9 +30,9 @@ const SortByModal = ({ modalVisible, setModalVisible , onSort }) => {
         <View style={styles.modalContainer}>
          
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setSelectedOption("Newest")}>
+            {/* <TouchableOpacity onPress={() => setSelectedOption("Newest")}>
               <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Text style={styles.title}>Sort by</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
               <Icon name="close" size={20} color="black" />

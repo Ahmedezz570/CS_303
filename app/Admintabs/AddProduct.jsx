@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ToastAndroid, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ToastAndroid, ActivityIndicator , ScrollView} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
 import { FontAwesome } from '@expo/vector-icons';
+
 
 const AddProduct = () => {
   const [image, setImage] = useState(null);
@@ -15,7 +16,8 @@ const AddProduct = () => {
     image: '',
     category: '',
     description: '',
-    price: '',
+    price: 0,
+    discount: 0,
     createdAt: new Date(),
     AddedBy: currentUser.email,
   });
@@ -107,8 +109,9 @@ const AddProduct = () => {
         image: '',
         category: '',
         description: '',
-        price: '',
+        price: 0,
         createdAt: new Date(),
+        discount: 0,
         AddedBy: currentUser.email,
       });
       setImage(null);
@@ -121,6 +124,8 @@ const AddProduct = () => {
   };
 
   return (
+    <>
+    <ScrollView>
     <View style={styles.container}>
       <Text style={styles.header}>Add Product</Text>
 
@@ -166,6 +171,14 @@ const AddProduct = () => {
         keyboardType="numeric"
         placeholder="Enter here"
       />
+      <Text style={styles.label}>Product Discount</Text>
+      <TextInput
+        style={styles.input}
+        value={productDetails.discount}
+        onChangeText={(text) => changeHandler('discount', text)}
+        keyboardType="numeric"
+        placeholder="Enter here"
+      />
 
       {image ? (
         <View style={{ alignItems: 'center', marginTop: 15 }}>
@@ -204,6 +217,8 @@ const AddProduct = () => {
         )}
       </TouchableOpacity>
     </View>
+    </ScrollView>
+    </>
   );
 };
 
