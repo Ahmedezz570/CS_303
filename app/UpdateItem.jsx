@@ -15,8 +15,7 @@ const UpdateItem = () => {
 
   useEffect(() => {
     getItem()
-  }
-    , [])
+  }, [])
 
 
   const getItem = async () => {
