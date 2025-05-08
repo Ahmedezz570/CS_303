@@ -53,7 +53,7 @@ export default function TabLayout() {
             <Tabs.Screen
         name='chatBot'
         options={{
-          title: 'Your Assitant',
+          title: 'Chat',
           tabBarIcon: ({ color }) => (
             <FontAwesome5 name="robot" size={24} color={color} />
           )
