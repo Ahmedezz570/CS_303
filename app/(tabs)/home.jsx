@@ -63,7 +63,6 @@ const HomePage = () => {
       await auth.signOut(); 
       await AsyncStorage.removeItem('DataForUser');
       router.replace("/Login"); 
-      Alert.alert("Success", "Logout successful");
     } catch (error) {
       Alert.alert("Error", "There was an issue logging out. Please try again.");
       console.error(error);  

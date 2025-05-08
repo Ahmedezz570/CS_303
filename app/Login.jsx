@@ -41,12 +41,13 @@ const Login = () => {
           isAdmin: data?.isAdmin || false,
         }));
         if (data?.isAdmin === true) {
-          Alert.alert("Success", "Welcome Admin");
           router.replace('./Admintabs');
           router.push('./Admintabs/Admin');
         }
+        else if(data?.isBlocked === true){
+Alert.alert("Blocked","This account is blocked")
+        }
         else {
-          Alert.alert("Success", "User logged in successfully");
           router.replace('/(tabs)');
           router.push('/home');
         }

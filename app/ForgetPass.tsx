@@ -1,4 +1,3 @@
-
 import { ActivityIndicator, Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
@@ -61,7 +60,7 @@ const ForgetPass = () => {
       {loading && (
                <View style={styles.loadingOverlay}>
                  <ActivityIndicator size="large" color="white" />
-                 <Text style={styles.loadingText}>Creating your account...</Text>
+                 <Text style={styles.loadingText}>Sending Reset Password Email...</Text>
                </View>
              )}
     </View>

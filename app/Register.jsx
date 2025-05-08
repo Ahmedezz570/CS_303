@@ -20,7 +20,7 @@ const Register = () => {
   let x = /\d/.test(password);
   let hasCapital = /[A-Z]/.test(password);
   let hassmall = /[a-z]/.test(password);
-  const hasSpecialChar = /[_$%]/.test(password);
+  const hasSpecialChar = /[_@#$%]/.test(password);
 
 
   const handleRegister = async () => {
@@ -39,7 +39,7 @@ const Register = () => {
       if (!x) { Alert.alert("Weak Password", "Password Must Contain a Number. "); }
       else if (!hasCapital) { Alert.alert("Weak Password", "Password Must Contain a Capital Letter"); }
       else if (!hassmall) { Alert.alert("Weak Password", "Password Must Contain  Letters"); }
-      else if (!hasSpecialChar) { Alert.alert("Weak Password", "Password Must Contain a Special Character Like @,_,%"); }
+      else if (!hasSpecialChar) { Alert.alert("Weak Password", "Password Must Contain a Special Character Like @,_,%,#,$"); }
       return;
     }
     setLoading(true);
@@ -71,7 +71,7 @@ const Register = () => {
       if (error.message === "Firebase: Error (auth/email-already-in-use).") {
         Alert.alert("Error", "this email already exist");
       }
-      if (error.message === "Firebase: Error (auth/invalid-email).") {
+     else if (error.message === "Firebase: Error (auth/invalid-email).") {
         Alert.alert("Error", "wrong format of email");
       }
       else {
