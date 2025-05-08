@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
@@ -6,77 +6,59 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, getUserData } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MiniAlert from './(ProfileTabs)/MiniAlert';
+import Icon from 'react-native-vector-icons/FontAwesome';  
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [alertMessage, setAlertMessage] = useState(null);
-  const [alertType, setAlertType] = useState('success');
- const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showpass, setshowpass] = useState(true);
+
   const router = useRouter();
   const signin = async () => {
     setError('');
     if (!email || !password) {
-      setAlertMessage('Please fill all fields');
-      setAlertType('error');
+      setError('Please fill all fields');
+      Alert.alert("Error", "please write email and password");
+
       return;
     }
     setLoading(true);
+
     try {
       const getUser = await signInWithEmailAndPassword(auth, email, password);
-      const user = auth.currentUser;
-      console.log("User:", user);
+      const user = getUser.user;
       const userDoc = await getDoc(doc(db, "Users", user.uid));
-      
-     
+
       if (userDoc.exists()) {
         const data = await getUserData(user.uid);
         console.log(data?.isAdmin);
-        console.log(data?.preferredCategories);
-        const newCategories = data?.preferredCategories;
-        console.log(newCategories);
-        setSelectedCategories(newCategories);
-        console.log("Selected Categories (direct):", newCategories);
+
         await AsyncStorage.setItem('DataForUser', JSON.stringify({
           uid: user.uid,
           email: user.email,
           isAdmin: data?.isAdmin || false,
         }));
-
         if (data?.isAdmin === true) {
-          setAlertMessage('Welcome Admin!');
-          setAlertType('success');
-          setTimeout(() => {
-            router.replace('./Admintabs');
-            router.push('./Admintabs/Admin');
-          }, 1500);
+          Alert.alert("Success", "Welcome Admin");
+          router.replace('./Admintabs');
+          router.push('./Admintabs/Admin');
         }
         else {
-          setAlertMessage('Welcome back! Login successful');
-          setAlertType('success');
-          setTimeout(() => {
-            router.replace({
-              pathname: '/(tabs)/',
-             
-            });
-            router.push({pathname:'/home',
-              params: { categories: JSON.stringify(newCategories) }}
-            );
-          }, 1500);
+          Alert.alert("Success", "User logged in successfully");
+          router.replace('/(tabs)');
+          router.push('/home');
         }
       } else {
         setError('User not found.');
-        setAlertMessage('User not found');
-        setAlertType('error');
+      Alert.alert("Error","wrong Email or password")
       }
 
     } catch (error) {
       setError('Invalid email or password.');
-      setAlertMessage('Invalid email or password');
-      setAlertType('error');
+      Alert.alert("Error","wrong Email or password")
+      Alert.alert("Error","wrong Email or password")
     }
     setLoading(false);
   }
@@ -86,15 +68,6 @@ const Login = () => {
   }
   return (
     <View style={styles.fl}>
-      {
-        alertMessage && (
-          <MiniAlert
-            message={alertMessage}
-            type={alertType}
-            onHide={() => setAlertMessage(null)}
-          />
-        )
-      }
       <View style={styles.container}>
         <Text style={styles.title}>Sign in</Text>
 
@@ -106,13 +79,12 @@ const Login = () => {
           keyboardType="email-address"
         />
 
-        <TextInput
-          placeholder="Password"
-          style={styles.input}
-          secureTextEntry
-          value={password}
-          onChangeText={(text) => setPassword(text)}
-        />
+        <View style={styles.pass}>
+                <TextInput style={styles.passinput} placeholder="Password"  secureTextEntry={showpass} value={password} onChangeText={setPassword} />
+              { password.length!=0&& <TouchableOpacity style={styles.passbutt} onPress={() => setshowpass(!showpass)}>
+                <Icon name={showpass ? 'eye-slash' : 'eye'} size={24} color="black" />
+              </TouchableOpacity>}
+              </View>
 
 
         <TouchableOpacity style={styles.button} onPress={signin}>
@@ -127,7 +99,7 @@ const Login = () => {
 
           </TouchableOpacity>
         </View>
-
+        
         <TouchableOpacity style={styles.button1} >
           <FontAwesome name='google' size={30} style={styles.icon}></FontAwesome>
 
@@ -163,6 +135,23 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     alignItems: 'center',
   },
+  pass:{
+    width:'95%',
+    flexDirection:'row',
+    },
+    passinput:{
+      width:'100%',
+      height: 40,
+      backgroundColor: 'rgb(226, 226, 226)',
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginBottom: Dimensions.get('window').height * 0.01,
+        zIndex:-1,
+    },
+    passbutt:{
+    marginHorizontal:-40,
+    marginVertical:7,
+    },
   title: {
     fontSize: 30,
     fontWeight: 400,
@@ -285,4 +274,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+
 

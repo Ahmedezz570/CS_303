@@ -1,76 +1,88 @@
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { auth, db } from '../Firebase/Firebase';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
-import MiniAlert from './(ProfileTabs)/MiniAlert';
+
 
 const Register = () => {
+
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [alertMessage, setAlertMessage] = useState(null);
-  const [alertType, setAlertType] = useState('success');
-
+  const [showpass, setshowpass] = useState(true);
   const router = useRouter();
+  let x = /\d/.test(password);
+  let hasCapital = /[A-Z]/.test(password);
+  let hassmall = /[a-z]/.test(password);
+  const hasSpecialChar = /[_$%]/.test(password);
+
 
   const handleRegister = async () => {
     if (!username || !email || !password) {
-      setAlertMessage('Please fill all fields');
-      setAlertType('error');
+      Alert.alert("Error", "Please fill all fields");
       return;
     }
-    if (password.length < 6) {
-      setAlertMessage('Password must be at least 6 characters');
-      setAlertType('error');
-      return;
-    }
+    if (password.length < 8) {
+      Alert.alert("Weak Password", "Password must be at least 8 characters.");
 
+
+
+      return;
+    }
+    if (!x || !hasCapital || !hassmall || !hasSpecialChar) {
+      if (!x) { Alert.alert("Weak Password", "Password Must Contain a Number. "); }
+      else if (!hasCapital) { Alert.alert("Weak Password", "Password Must Contain a Capital Letter"); }
+      else if (!hassmall) { Alert.alert("Weak Password", "Password Must Contain  Letters"); }
+      else if (!hasSpecialChar) { Alert.alert("Weak Password", "Password Must Contain a Special Character Like @,_,%"); }
+      return;
+    }
     setLoading(true);
 
     try {
-      const createUser = await createUserWithEmailAndPassword(auth, email, password);
-      const user = createUser.user;
 
-      await setDoc(doc(db, "Users", user.uid), {
-        username,
-        email: email.trim(),
-        uid: user.uid,
-        image: "https://randomuser.me/api/portraits/men/1.jpg",
-        isAdmin: false,
-        isBlocked: false,
-        isNewUser: true,
-        createdAt: new Date()
-      });
+      const q = query(collection(db, 'Users'), where('username', '==', username))
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
 
-      setAlertMessage('Account created successfully!');
-      setAlertType('success');
-
-      setTimeout(() => {
-        router.push({ 
-          pathname: '/Onboarding',
-          params: { fromRegister: true, userId: user.uid }
+        const createUser = await createUserWithEmailAndPassword(auth, email, password);
+        const user = createUser.user;
+        await setDoc(doc(db, "Users", user.uid), {
+          username,
+          email: email.trim(),
+          uid: user.uid,
+          image: "https://randomuser.me/api/portraits/men/1.jpg",
+          isAdmin: false,
+          isBlocked: false,
         });
-      }, 1500);
-    } catch (error) {
-      console.error('Registration error:', error);
-      
-      if (error.code === 'auth/email-already-in-use') {
-        setAlertMessage('This email is already registered');
-      } else if (error.code === 'auth/invalid-email') {
-        setAlertMessage('Invalid email address');
-      } else {
-        setAlertMessage('Registration failed. Please try again');
+
+        Alert.alert("Success", "User created successfully");
+        router.replace('/Login');
       }
-      
-      setAlertType('error');
+      else {
+        Alert.alert("Eroor", "username is already used")
+      }
+    } catch (error) {
+      if (error.message === "Firebase: Error (auth/email-already-in-use).") {
+        Alert.alert("Error", "this email already exist");
+      }
+      if (error.message === "Firebase: Error (auth/invalid-email).") {
+        Alert.alert("Error", "wrong format of email");
+      }
+      else {
+        Alert.alert("Registration Error", error.message);
+      }
     }
-    
     setLoading(false);
   }
+
+
+
 
   const back = () => {
     router.replace('/Login');
@@ -78,46 +90,45 @@ const Register = () => {
 
   const reset = () => {
     router.push('/ForgetPass');
-  }
 
+  }
   return (
     <View style={styles.fl}>
-      {alertMessage && (
-        <MiniAlert
-          message={alertMessage}
-          type={alertType}
-          onHide={() => setAlertMessage(null)}
-        />
-      )}
 
       <View style={styles.container}>
         <TouchableOpacity style={styles.backbut} onPress={back}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-
         <Text style={styles.title}>Create Account</Text>
         <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={setUsername} />
-        <TextInput placeholder="Email Address" style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <TextInput placeholder="Password" style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
-
+        <TextInput placeholder="Email Address" style={styles.input} value={email} onChangeText={setEmail} />
+        <View style={styles.pass}>
+          <TextInput style={styles.passinput} placeholder="Password" secureTextEntry={showpass} value={password} onChangeText={setPassword} />
+          {password.length != 0 && <TouchableOpacity style={styles.passbutt} onPress={() => setshowpass(!showpass)}>
+            <Icon name={showpass ? 'eye-slash' : 'eye'} size={24} color="black" />
+          </TouchableOpacity>}
+        </View>
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
-
         <View style={styles.semif}>
+
           <Text style={styles.text}>Forgot Password?</Text>
+
           <TouchableOpacity style={styles.createButton} onPress={reset}>
             <Text style={styles.createButtonText}>Reset</Text>
+
           </TouchableOpacity>
         </View>
 
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="white" />
-            <Text style={styles.loadingText}>Creating your account...</Text>
-          </View>
-        )}
+
       </View>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Creating your account...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -125,12 +136,31 @@ const Register = () => {
 export default Register;
 
 const styles = StyleSheet.create({
+
+
   container: {
     width: '98%',
     minHeight: Dimensions.get('window').height * 0.5,
     justifyContent: 'center',
     alignContent: 'center',
     alignItems: 'center',
+  },
+  pass: {
+    width: '95%',
+    flexDirection: 'row',
+  },
+  passinput: {
+    width: '100%',
+    height: 40,
+    backgroundColor: 'rgb(226, 226, 226)',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: Dimensions.get('window').height * 0.01,
+    zIndex: -1,
+  },
+  passbutt: {
+    marginHorizontal: -40,
+    marginVertical: 7,
   },
   title: {
     fontSize: 30,
@@ -215,3 +245,5 @@ const styles = StyleSheet.create({
   },
 
 });
+
+
