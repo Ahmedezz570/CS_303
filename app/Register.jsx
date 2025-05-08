@@ -23,6 +23,8 @@ const Register = () => {
   const hasSpecialChar = /[_@#$%]/.test(password);
 
 
+  const rand=Math.floor(Math.random() * 60) + 1;
+  
   const handleRegister = async () => {
     if (!username || !email || !password) {
       Alert.alert("Error", "Please fill all fields");
@@ -56,7 +58,7 @@ const Register = () => {
           username,
           email: email.trim(),
           uid: user.uid,
-          image: "https://randomuser.me/api/portraits/men/1.jpg",
+          image: `https://randomuser.me/api/portraits/men/${rand}.jpg`,
           isAdmin: false,
           isBlocked: false,
         });

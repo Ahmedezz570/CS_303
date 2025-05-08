@@ -10,8 +10,6 @@ import { Stack,useRouter } from 'expo-router';
 import ModernAlert from '../components/ModernAlert';
 
 
-
-
 const ProductDetails = () => {
     const navigation = useNavigation();
     const { id } = useLocalSearchParams();
@@ -232,17 +230,7 @@ const handleAddToCart = async () => {
                     <Text style={{  textDecorationLine: "line-through", }}>{formatPrice(product?.price)} EGP</Text>
                     <Text style={styles.price1}>{formatPrice(applyDiscount(product?.price , product?.discount))} EGP</Text>
 
-                    <View style={styles.ratingRow}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <Ionicons
-                                key={`star-${star}`}
-                                name={star <= 4 ? "star" : "star-outline"}
-                                size={16}
-                                color="#FFD700"
-                                style={{ marginRight: 2 }}
-                            />
-                        ))}
-                    </View>
+                  
                 </View>
 
                 <View style={styles.descriptionContainer}>
@@ -281,7 +269,6 @@ const handleAddToCart = async () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Add ModernAlert component */}
             <ModernAlert
                 visible={alertVisible}
                 title={alertConfig.title}
