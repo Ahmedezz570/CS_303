@@ -9,6 +9,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -16,18 +17,19 @@ import Gender from "../components/Gender";
 import Sort from "../components/Sort";
 import Price from "../components/Price";
 import { useRouter } from "expo-router";
-import { db } from "../Firebase/Firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { db , auth} from "../Firebase/Firebase";
 import Icon_1 from 'react-native-vector-icons/MaterialIcons';
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 30;
+import { collection, onSnapshot, setDoc, doc, getDoc, updateDoc, increment } from "firebase/firestore";
+
 
 const SearchFilterScreen = () => {
   const [searchText, setSearchText] = useState("");
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
-
+const currentUser = auth.currentUser;
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
 
@@ -123,7 +125,68 @@ const SearchFilterScreen = () => {
 const applyDiscount = (price , discountPercentage ) => {
   return Math.floor(price - (price * discountPercentage) / 100);
 };
-
+const handleAddToCart = async (item) => {
+    if (!currentUser) {
+      // showAlert({
+      //   title: 'Sign in required',
+      //   message: 'Please sign in to add products to your shopping cart',
+      //   type: 'warning',
+      //   primaryButtonText: 'Sign In',
+      //   secondaryButtonText: 'Cancel',
+      //   onPrimaryPress: () => router.push("/Login"),
+      // });
+      Alert.alert("Sign in required", "Please sign in to add products to your shopping cart", [
+        { text: "Sign In", onPress: () => router.push("/Login") },
+        { text: "Cancel" },
+      ]);
+      return;
+    }
+  
+    try {
+      const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', item.docId);
+      const cartDocSnap = await getDoc(cartDocRef);
+  
+      if (cartDocSnap.exists()) {
+        await updateDoc(cartDocRef, {
+          quantity: increment(1),
+          updatedAt: new Date(),
+        });
+      } else {
+        await setDoc(cartDocRef, {
+          productId: item.docId,
+          name: item.name,
+          price: item.price,
+          image: item.image,
+          discount: item.discount || 0,
+          quantity: 1,
+          createdAt: new Date(),
+        });
+      }
+  
+      // showAlert({
+      //   title: 'Added Successfully',
+      //   message: `${item.name} has been added to your shopping cart`,
+      //   type: 'cart',
+      //   primaryButtonText: 'Continue',
+      //   secondaryButtonText: 'Go to Cart',
+      //   onSecondaryPress: () => router.push("/cart"),
+      // });
+      Alert.alert("Added Successfully", `${item.name} has been added to your shopping cart`, [
+        { text: "Continue" },
+        { text: "Go to Cart", onPress: () => router.push("/cart") },
+      ]);
+  
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      // showAlert({
+      //   title: 'Error',
+      //   message: 'Failed to add product to cart. Please try again.',
+      //   type: 'error',
+      //   primaryButtonText: 'OK',
+      // });
+      Alert.alert(error , "Failed to add product to cart. Please try again.");
+    }
+  };
   const renderItem = ({ item }) => (
     <TouchableOpacity
     onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })} 
@@ -132,6 +195,13 @@ const applyDiscount = (price , discountPercentage ) => {
         <Image source={{ uri: item.image }} style={styles.productImage} />
         <Text style={styles.productTitle} numberOfLines={3}>{item.name}</Text>
         <Text style={styles.productPrice}>EGP {applyDiscount(item.price, item.discount)}</Text>
+         <TouchableOpacity
+                    style={styles.addToCartButton}
+                    onPress={() => handleAddToCart(item)}
+                  >
+                    <Icon name="shopping-cart" size={20} color="#fff" />
+                    <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
+                  </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -313,7 +383,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     alignItems: "center",
-    height: 230,
+    height: 280,
   },
   productImage: {
     width: "100%",
@@ -351,6 +421,17 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  
+  addToCartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 10,
+    width: "100%",
   },
 });
 
