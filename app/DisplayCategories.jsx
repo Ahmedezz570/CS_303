@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { db } from '../Firebase/Firebase';
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
+
 const applyDiscount = (price, discountPercentage) => {
   return Math.floor(price - (price * discountPercentage) / 100);
 };
@@ -14,95 +15,70 @@ const formatNumber = (number) => {
 
 const DisplayCategories = () => {
   const router = useRouter();
-  const { title } = useLocalSearchParams();
+  const { title, filter } = useLocalSearchParams();
   const categoryName = typeof title === "string" ? title : "";
-  
+  const categoryNameLower = categoryName.toLowerCase();
+  const filterType = typeof filter === "string" ? filter : "";
+
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pageTitle, setPageTitle] = useState(categoryName);
 
   useEffect(() => {
-    try {
-      setIsLoading(true);
-      
-      const categoryNameLower = categoryName.toLowerCase();
-      console.log("Filtering by category:", categoryNameLower);
-      
-      let categoryType;
-      switch(categoryNameLower) {
-        case 'mobile':
-          categoryType = 1;
-          break;
-        case 'pants':
-          categoryType = 2;
-          break;
-        case 'dress':
-          categoryType = 3;
-          break;
-        case 'jacket':
-          categoryType = 4;
-          break;
-        case 'sweatshirt':
-          categoryType = 5;
-          break;
-        case 't-shirt':
-          categoryType = 6;
-          break;
-        case 'wedding':
-          categoryType = 7;
-          break;
-        default:
-          categoryType = null;
-      }
-      
-      console.log("Category type:", categoryType);
-      
-      const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-        console.log("Total products fetched:", snapshot.docs.length);
-        
-        // تخزين جميع المنتجات
-        const allProducts = snapshot.docs.map((doc) => ({
-          docId: doc.id,
-          ...doc.data(),
-        }));
-        
-        // تصفية المنتجات بطريقة مرنة
-        const filteredProducts = allProducts.filter(product => {
-          // طريقة 1: حسب category/type
-          if (categoryType && product.type === categoryType) return true;
-          
-          // طريقة 2: فحص حقل الاسم
-          if (product.name && product.name.toLowerCase().includes(categoryNameLower)) return true;
-          
-          // طريقة 3: فحص حقل الوصف
-          if (product.description && product.description.toLowerCase().includes(categoryNameLower)) return true;
-          
-          // طريقة 4: تصفية حسب حقل الفئة إذا كان نصياً
-          if (typeof product.category === 'string' && 
-              product.category.toLowerCase().includes(categoryNameLower)) return true;
-          
+    setIsLoading(true);
+    
+    if (filterType === "top-selling") {
+      setPageTitle("Top Selling");
+    } else if (filterType === "new-arrivals") {
+      setPageTitle("New Arrivals");
+    } else if (filterType === "recommended") {
+      setPageTitle("Recommended For You");
+    } else {
+      setPageTitle(categoryName);
+    }
+
+    const productsQuery = query(collection(db, "products"));
+
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+      const allProducts = snapshot.docs.map((doc) => ({
+        docId: doc.id,
+        ...doc.data(),
+      }));
+
+      let filteredProducts = allProducts;
+
+      if (filterType === "top-selling") {
+        filteredProducts = [...allProducts].sort((a, b) => (b.sold || 0) - (a.sold || 0));
+      } else if (filterType === "new-arrivals") {
+        filteredProducts = [...allProducts].sort((a, b) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(0);
+          const dateB = b.createdAt?.toDate?.() || new Date(0);
+          return dateB - dateA;
+        });
+      } else if (filterType === "recommended") {
+        filteredProducts = [...allProducts].sort(() => Math.random() - 0.5);
+      } else if (categoryName) {
+        filteredProducts = allProducts.filter(product => {
+          if (typeof product.category === 'string') {
+            return product.category.toLowerCase() === categoryNameLower;
+          }
           return false;
         });
-        
-        console.log("Filtered products:", filteredProducts.length);
-        
-        setProducts(filteredProducts);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching products:", error);
-        setIsLoading(false);
-      });
+      }
 
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error in category products effect:", error);
+      setProducts(filteredProducts);
       setIsLoading(false);
-    }
-  }, [categoryName]);
+    }, (error) => {
+      console.error("Error fetching products:", error);
+      setIsLoading(false);
+    });
 
-  // Product item component
+    return () => unsubscribe();
+  }, [categoryNameLower, filterType]);
+
   const ProductItem = ({ item }) => {
-    const randomDiscount = useMemo(() => Math.floor(Math.random() * 41) + 10, [item.docId]);
-    
+    const discount = item.discount || Math.floor(Math.random() * 41) + 10;
+
     return (
       <TouchableOpacity
         style={styles.productCard}
@@ -112,11 +88,11 @@ const DisplayCategories = () => {
         <View style={styles.productInfo}>
           <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
           <View style={styles.priceContainer}>
-            <Text style={styles.oldPrice}>{item.price} EGP</Text>
-            <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price, item.discount))} EGP</Text>
+            <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
+            <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price, discount))} EGP</Text>
           </View>
           <View style={styles.discountTag}>
-            <Text style={styles.discountText}>{item.discount}% OFF</Text>
+            <Text style={styles.discountText}>{discount}% OFF</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -133,9 +109,9 @@ const DisplayCategories = () => {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
-          title: categoryName,
+          title: pageTitle,
           headerStyle: { backgroundColor: '#f9f9f9' },
           headerTintColor: '#333',
           headerTitleStyle: { fontWeight: 'bold' },
@@ -143,13 +119,10 @@ const DisplayCategories = () => {
       />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{categoryName}</Text>
+          <Text style={styles.headerTitle}>{pageTitle}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -170,7 +143,7 @@ const DisplayCategories = () => {
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No products found in this category</Text>
+            <Text style={styles.emptyText}>No products found</Text>
           </View>
         )}
       </View>

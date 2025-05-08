@@ -7,6 +7,7 @@ import { doc, getDoc,collection, updateDoc, arrayUnion, arrayRemove,increment ,s
 import Review from './Review'
 import { getAuth } from 'firebase/auth';
 import { Stack,useRouter } from 'expo-router';
+import ModernAlert from '../components/ModernAlert';
 
 
 
@@ -17,9 +18,25 @@ const ProductDetails = () => {
     const [product, setProduct] = useState({});
     const [isFavorite, setIsFavorite] = useState(false);
     const router = useRouter();
+    
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        type: 'info',
+        primaryButtonText: 'OK',
+        secondaryButtonText: '',
+        onPrimaryPress: () => {},
+        onSecondaryPress: () => {}
+    });
 
+    const showAlert = (config) => {
+        setAlertConfig(config);
+        setAlertVisible(true);
+    };
 
-    const userId = auth.currentUser.uid;
+    const currentUser = auth.currentUser;
+    const userId = currentUser ? currentUser.uid : null;
 
     const formatPrice = (price) => {
         return price ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
@@ -28,9 +45,9 @@ const ProductDetails = () => {
     const parseDescription = (desc) => {
         if (!desc) return [];
 
-        return desc.split('\n').map(line => {
+        return desc.split('\n').map((line, index) => {
             const [label, data] = line.split(': ');
-            return { label, data };
+            return { label, data, key: `desc-item-${index}` };
         }).filter(item => item.label && item.data);
     };
     const applyDiscount = (price , discountPercentage ) => {
@@ -53,6 +70,11 @@ const ProductDetails = () => {
         };
 
         const checkFavoriteStatus = async () => {
+            if (!userId) {
+                setIsFavorite(false);
+                return;
+            }
+
             try {
                 const userDocRef = doc(db, "Users", userId);
                 const userDoc = await getDoc(userDocRef);
@@ -72,6 +94,18 @@ const ProductDetails = () => {
     }, [id, userId]);
 
     const handleFavorite = async () => {
+        if (!userId) {
+            showAlert({
+                title: 'Sign in required',
+                message: 'Please sign in to add items to your favorites',
+                type: 'warning',
+                primaryButtonText: 'Sign In',
+                secondaryButtonText: 'Cancel',
+                onPrimaryPress: () => router.push("/Login"),
+            });
+            return;
+        }
+
         try {
             const userDocRef = doc(db, "Users", userId);
 
@@ -96,8 +130,25 @@ const ProductDetails = () => {
 
 const handleAddToCart = async () => {
   const currentUser = getAuth().currentUser;
-  if (!currentUser || !id) {
-    Alert.alert("Error", "User or Product ID is missing.");
+  if (!currentUser) {
+    showAlert({
+        title: 'Sign in required',
+        message: 'Please sign in to add products to your shopping cart',
+        type: 'warning',
+        primaryButtonText: 'Sign In',
+        secondaryButtonText: 'Cancel',
+        onPrimaryPress: () => router.push("/Login"),
+    });
+    return;
+  }
+
+  if (!id) {
+    showAlert({
+        title: 'Error',
+        message: 'Product ID missing',
+        type: 'error',
+        primaryButtonText: 'OK',
+    });
     return;
   }
 
@@ -112,14 +163,32 @@ const handleAddToCart = async () => {
     } else {
       await setDoc(cartDocRef, {
         productId: id,
+        name: product?.name,
+        price: product?.price,
+        image: product?.image,
+        discount: product?.discount || 0,
         quantity: 1,
-        newPrice :  applyDiscount(product?.price , product?.discount),
+        createdAt: new Date(),
       });
     }
-console.log(`Product ${id} added to cart`); ;
+
+    showAlert({
+        title: 'Added Successfully',
+        message: `${product?.name} has been added to your cart`,
+        type: 'cart',
+        primaryButtonText: 'Continue Shopping',
+        secondaryButtonText: 'Go to Cart',
+        onPrimaryPress: () => {},
+        onSecondaryPress: () => router.push("/cart"),
+    });
   } catch (error) {
     console.error("Error adding to cart:", error);
-    Alert.alert("Error", "Failed to add product to cart.");
+    showAlert({
+        title: 'Error',
+        message: 'Failed to add product to cart. Please try again.',
+        type: 'error',
+        primaryButtonText: 'OK',
+    });
   }
 };
 
@@ -166,7 +235,7 @@ console.log(`Product ${id} added to cart`); ;
                     <View style={styles.ratingRow}>
                         {[1, 2, 3, 4, 5].map((star) => (
                             <Ionicons
-                                key={star}
+                                key={`star-${star}`}
                                 name={star <= 4 ? "star" : "star-outline"}
                                 size={16}
                                 color="#FFD700"
@@ -180,10 +249,10 @@ console.log(`Product ${id} added to cart`); ;
                     <Text style={styles.sectionTitle}>Details</Text>
 
                     {descriptionItems.length > 0 ? (
-                        descriptionItems.map((item, index) => (
-                            <View key={index} style={[
+                        descriptionItems.map((item) => (
+                            <View key={item.key} style={[
                                 styles.descriptionItem,
-                                index === descriptionItems.length - 1 && { borderBottomWidth: 0 }
+                                item.key === `desc-item-${descriptionItems.length - 1}` && { borderBottomWidth: 0 }
                             ]}>
                                 <View style={styles.labelContainer}>
                                     <Ionicons name="information-circle-outline" size={16} color="#666" style={{ marginRight: 5 }} />
@@ -211,6 +280,19 @@ console.log(`Product ${id} added to cart`); ;
                     </View>
                 </TouchableOpacity>
             </View>
+
+            {/* Add ModernAlert component */}
+            <ModernAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                primaryButtonText={alertConfig.primaryButtonText}
+                secondaryButtonText={alertConfig.secondaryButtonText}
+                onPrimaryPress={alertConfig.onPrimaryPress}
+                onSecondaryPress={alertConfig.onSecondaryPress}
+                onClose={() => setAlertVisible(false)}
+            />
         </View>
     );
 };

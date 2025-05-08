@@ -3,11 +3,7 @@ import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity,
 import { collection, getDocs, addDoc, serverTimestamp, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { db, auth, getUserData } from "../Firebase/Firebase";
 
-type ReviewProps = {
-  productId: string;
-};
-
-const Review: React.FC<ReviewProps> = ({ productId }) => {
+const Review = ({ productId }) => {
   const [reviews, setReviews] = useState([]);
   const [comment, setComment] = useState("");
   const [rating, setRating] = useState(0);
@@ -27,7 +23,7 @@ const Review: React.FC<ReviewProps> = ({ productId }) => {
       setReviews(loadedReviews);
     });
 
-    return () => unsubscribe(); // cleanup
+    return () => unsubscribe();
   }, [productId]);
 
   const averageRating = reviews.length > 0 
@@ -166,8 +162,8 @@ const Review: React.FC<ReviewProps> = ({ productId }) => {
         </View>
       </View>
 
-      {reviews.map((review) => (
-        <View key={review.id} style={styles.card}>
+      {reviews.map((review,index) => (
+        <View key={review.id||index} style={styles.card}>
           <Image source={{ uri: review.userImage || 'https://via.placeholder.com/50' }} style={styles.image} />
           <View style={styles.textContainer}>
             <View style={styles.reviewHeader}>

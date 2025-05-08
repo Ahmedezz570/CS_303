@@ -1,27 +1,70 @@
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Stack, Slot } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import { CartProvider } from './item/CartContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator } from 'react-native';
+import { auth } from '../Firebase/Firebase';
+
 const Layout = () => {
+  const [appIsReady, setAppIsReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    async function prepareApp() {
+      try {
+        const onboardingComplete = await AsyncStorage.getItem('@onboarding_complete');
+        
+        if (onboardingComplete !== 'true') {
+          setInitialRoute('Onboarding');
+        } else {
+          const user = auth.currentUser;
+          if (!user) {
+            setInitialRoute('Login');
+          } else {
+            setInitialRoute('(tabs)/home');
+          }
+        }
+      } catch (error) {
+        console.error('Error preparing app:', error);
+        setInitialRoute('Login');
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+
+    prepareApp();
+  }, []);
+
+  if (!appIsReady || !initialRoute) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="rgb(247, 207, 174)" />
+      </View>
+    );
+  }
+
   return (
     <CartProvider>
-      <Stack>
-        <Stack.Screen name="home" options={{ headerShown: true }} />
-        <Stack.Screen name="Login" options={{ headerShown: false }} />
-        <Stack.Screen name="Register" options={{ headerShown: false }} />
-        <Stack.Screen name="ForgetPass" options={{ headerShown: false }} />
+      <Stack initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="Login" />
+        <Stack.Screen name="Register" />
+        <Stack.Screen name="ForgetPass" />
+        <Stack.Screen name="Onboarding" />
+        <Stack.Screen name="CategorySelection" />
         <Stack.Screen name="About" />
         <Stack.Screen name="products" />
-        <Stack.Screen name="Admintabs" options={{ headerShown: false }} />
-        <Stack.Screen name="Search" options={{ headerShown: false }} />
-        <Stack.Screen name="cart" options={{ headerShown: false }} />
-        <Stack.Screen name="(ProfileTabs)/About" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-         <Stack.Screen name="Settings" options={{ headerShown: false }} />
-        <Stack.Screen name="singlepage" options={{ headerShown: false }} />
-        <Stack.Screen name="DisplayCategories" options={{ headerShown: false }} />
+        <Stack.Screen name="Admintabs" />
+        <Stack.Screen name="Search" />
+        <Stack.Screen name="cart" />
+        <Stack.Screen name="(ProfileTabs)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="Settings" />
+        <Stack.Screen name="singlepage" />
+        <Stack.Screen name="DisplayCategories" />
       </Stack>
     </CartProvider>
   );
-}
+};
 
 export default Layout;

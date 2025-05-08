@@ -42,18 +42,33 @@ const Register = () => {
         image: "https://randomuser.me/api/portraits/men/1.jpg",
         isAdmin: false,
         isBlocked: false,
+        isNewUser: true,
+        createdAt: new Date()
       });
 
       setAlertMessage('Account created successfully!');
       setAlertType('success');
 
       setTimeout(() => {
-        router.replace('/Login');
+        router.push({ 
+          pathname: '/Onboarding',
+          params: { fromRegister: true, userId: user.uid }
+        });
       }, 1500);
     } catch (error) {
-      setAlertMessage('Invalid email or password');
+      console.error('Registration error:', error);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        setAlertMessage('This email is already registered');
+      } else if (error.code === 'auth/invalid-email') {
+        setAlertMessage('Invalid email address');
+      } else {
+        setAlertMessage('Registration failed. Please try again');
+      }
+      
       setAlertType('error');
     }
+    
     setLoading(false);
   }
 

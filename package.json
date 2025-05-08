@@ -25,6 +25,7 @@
   "dependencies": {
     "@babel/runtime": "^7.27.1",
     "@expo/vector-icons": "^14.0.2",
+    "@lottiefiles/dotlottie-react": "^0.6.5",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-picker/picker": "2.9.0",
     "@react-navigation/native": "^7.0.14",

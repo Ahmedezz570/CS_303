@@ -76,14 +76,7 @@ const initialnotifications = [
     icon: '📩',
     read: false,
   },
-  {
-    id: '10',
-    title: '🗂️ Explore Categories',
-    body: 'Browse all our product categories.',
-    screen: 'Categories/SeeAllCategories',
-    icon: '🗂️',
-    read: false,
-  },
+  
 ];
 
 
@@ -129,7 +122,7 @@ const Notifications = () => {
 
 const styles = StyleSheet.create({
   readNotification: {
-    backgroundColor: '#e0e0e0', // لون باهت شوية
+    backgroundColor: '#e0e0e0',
   },
   
   container: {

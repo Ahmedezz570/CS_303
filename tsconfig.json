@@ -13,6 +13,20 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "app/(tabs)/products.jsx", "app/Login.jsx", "app/Register.jsx", "app/singlepage.jsx", "app/Review.jsx", "app/cart.jsx", "app/(tabs)/notifications.jsx", "app/index.jsx", "app/(ProfileTabs)/orders.tsx", "app/DisplayCategories.jsx", "app/Admintabs/Preview.tsx"  ]
+    "expo-env.d.ts",
+    "expo-router-types.d.ts",
+    "app/(tabs)/products.jsx", 
+    "app/Login.jsx", 
+    "app/Register.jsx", 
+    "app/singlepage.jsx", 
+    "app/Review.jsx", 
+    "app/cart.jsx", 
+    "app/(tabs)/notifications.jsx", 
+    "app/index.jsx", 
+    "app/(ProfileTabs)/orders.tsx", 
+    "app/DisplayCategories.jsx", 
+    "app/Admintabs/Preview.tsx",
+    "app/Onboarding.jsx",
+    "app/CategorySelection.jsx"
+  ]
 }

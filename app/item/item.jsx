@@ -3,6 +3,7 @@ import {View,Text,Image,TouchableOpacity,Modal,Pressable,StyleSheet,ActivityIndi
 import { useCart } from './CartContext'; 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
+import ModernAlert from '../../components/ModernAlert';
 const { width } = Dimensions.get("window");
 
 const Item = ({ item }) => {
@@ -10,7 +11,24 @@ const Item = ({ item }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const { addToCart } = useCart(); 
-    if (!item || !item.image || !item.price || !item.name) {
+  
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info',
+    primaryButtonText: 'OK',
+    secondaryButtonText: '',
+    onPrimaryPress: () => {},
+    onSecondaryPress: () => {}
+  });
+
+  const showAlert = (config) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+  
+  if (!item || !item.image || !item.price || !item.name) {
     return null;
   }
   
@@ -18,9 +36,23 @@ const Item = ({ item }) => {
     try {
       addToCart(item);  
       setModalVisible(false);
-      alert("Added to cart");
+      
+      showAlert({
+        title: 'Added Successfully',
+        message: `Added ${item.name} to your cart`,
+        type: 'cart',
+        primaryButtonText: 'Continue Shopping',
+        secondaryButtonText: 'Go to Cart',
+        onSecondaryPress: () => router.push("/cart"),
+      });
     } catch (error) {
-      console.error("Error adding to cart:", error);
+      console.error('Error adding to cart:', error);
+      showAlert({
+        title: 'Error',
+        message: 'Failed to add product to cart. Please try again.',
+        type: 'error',
+        primaryButtonText: 'OK',
+      });
     }
   };
   
@@ -119,6 +151,19 @@ const Item = ({ item }) => {
           />
         </TouchableOpacity>
       </Pressable>
+      
+      {/* Add ModernAlert component */}
+      <ModernAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        primaryButtonText={alertConfig.primaryButtonText}
+        secondaryButtonText={alertConfig.secondaryButtonText}
+        onPrimaryPress={alertConfig.onPrimaryPress}
+        onSecondaryPress={alertConfig.onSecondaryPress}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };

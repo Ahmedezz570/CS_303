@@ -1,57 +1,141 @@
 import Icon from "react-native-vector-icons/Feather";
-import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, Pressable, Alert } from "react-native";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { Stack, useRouter } from "expo-router";
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 24;
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {db} from '../../Firebase/Firebase';
-import { collection, onSnapshot , arrayUnion} from "firebase/firestore";
+import { collection, onSnapshot, arrayUnion, arrayRemove, query, orderBy, limit, where } from "firebase/firestore";
 import { MaterialIcons } from '@expo/vector-icons';
 import {auth} from "../../Firebase/Firebase";
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { getUserData } from "../../Firebase/Firebase";
+import ModernAlert from '../../components/ModernAlert';
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [favorites, setFavorites] = useState([]);
   const currentUser = auth.currentUser;
-  console.log(currentUser);
+  const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [preferredCategories, setPreferredCategories] = useState([]);
+  
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info',
+    primaryButtonText: 'OK',
+    secondaryButtonText: '',
+    onPrimaryPress: () => {},
+    onSecondaryPress: () => {}
+  });
+
+  const showAlert = (config) => {
+    setAlertConfig(config);
+    setAlertVisible(true);
+  };
+
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
       await AsyncStorage.removeItem('DataForUser');
       router.replace("/Login"); 
-      Alert.alert("Logout successful");
+      Alert.alert("Success", "Logout successful");
     } catch (error) {
       Alert.alert("Error", "There was an issue logging out. Please try again.");
       console.error(error);  
     }
   };
   
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-      const usersData = snapshot.docs.map((doc) => ({
-        docId: doc.id,  ...doc.data(),
+const fetchProducts = useCallback(async () => {
+  try {
+    setLoading(true);
+    const productsQuery = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(20));
+    
+    const unsubscribeListener = onSnapshot(productsQuery, (snapshot) => {
+      const productsData = snapshot.docs.map((doc) => ({
+        docId: doc.id,
+        ...doc.data(),
       }));
-      setProducts(usersData);
+      setProducts(productsData);
+      setLoading(false);
+      setRefreshing(false);
+    }, (err) => {
+      console.error("Error fetching products:", err);
+      setError("Unable to load products. Please try again later.");
+      setLoading(false);
+      setRefreshing(false);
     });
+    
+    return unsubscribeListener;
+  } catch (err) {
+    console.error("Error setting up products listener:", err);
+    setError("Something went wrong. Please try again later.");
+    setLoading(false);
+    setRefreshing(false);
+    
+    return () => {};
+  }
+}, []);
+  
+  const fetchFavorites = useCallback(async () => {
+    if (!currentUser) return;
+    
+    try {
+      const userDocRef = doc(db, "Users", currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists() && userDoc.data().Fav) {
+        setFavorites(userDoc.data().Fav || []);
+        setPreferredCategories(userDoc.data().preferredCategories || []);
+      }
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  }, [currentUser]);
+  
+  useEffect(() => {
+    let unsubscribe;
+  
+    const start = async () => {
+      unsubscribe = await fetchProducts(); 
+      fetchFavorites();
+    };
+  
+    start(); 
+  
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe(); 
+      }
+    };
+  }, [fetchProducts, fetchFavorites]);
+  
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchProducts();
+    fetchFavorites();
+  }, [fetchProducts, fetchFavorites]);
 
-    return () => unsubscribe();
-  }, []);
-
-  const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const applyDiscount = (price , discountPercentage ) => {
+  const applyDiscount = (price, discountPercentage) => {
     return Math.floor(price - (price * discountPercentage) / 100);
   };
-
-  
   
   const handleAddToCart = async (item) => {
-    console.log("Adding to cart:", item.docId);
-    console.log("Adding to cart:", item.price);
-  
     if (!currentUser) {
-      Alert.alert("Error", "User not logged in.");
+      showAlert({
+        title: 'Sign in required',
+        message: 'Please sign in to add products to your shopping cart',
+        type: 'warning',
+        primaryButtonText: 'Sign In',
+        secondaryButtonText: 'Cancel',
+        onPrimaryPress: () => router.push("/Login"),
+      });
       return;
     }
   
@@ -60,235 +144,358 @@ const HomePage = () => {
       const cartDocSnap = await getDoc(cartDocRef);
   
       if (cartDocSnap.exists()) {
-        
         await updateDoc(cartDocRef, {
           quantity: increment(1),
-         
+          updatedAt: new Date(),
         });
       } else {
-       
         await setDoc(cartDocRef, {
           productId: item.docId,
+          name: item.name,
+          price: item.price,
+          image: item.image,
+          discount: item.discount || 0,
           quantity: 1,
           createdAt: new Date(),
         });
       }
   
-      Alert.alert("Success", "Product added to cart!");
+      showAlert({
+        title: 'Added Successfully',
+        message: `${item.name} has been added to your shopping cart`,
+        type: 'cart',
+        primaryButtonText: 'Continue Shopping',
+        secondaryButtonText: 'Go to Cart',
+        onSecondaryPress: () => router.push("/cart"),
+      });
   
     } catch (error) {
       console.error("Error adding to cart:", error);
-      Alert.alert("Error", "Failed to add product to cart.");
+      showAlert({
+        title: 'Error',
+        message: 'Failed to add product to cart. Please try again.',
+        type: 'error',
+        primaryButtonText: 'OK',
+      });
     }
   };
   
-  const handleFavorite = async (item) => {
-    try {
-        const userDocRef = doc(db, "Users", auth.currentUser.uid);
-
-        
-            await updateDoc(userDocRef, {
-                Fav: arrayUnion(item.docId),
-            });
-            
-            Alert.alert("Favorite", `${item?.name} has been added to favorites!`);
-        
-    } catch (error) {
-        console.error("Error updating favorites:", error);
-        Alert.alert("Error", "Could not update favorites. Please try again.");
-    }
-};
-  const Item = ({ item }) => {
-    const router = useRouter();
+  const isItemFavorite = useCallback((itemId) => {
+    if (!currentUser || !favorites || favorites.length === 0) return false;
+    return favorites.includes(itemId);
+  }, [favorites, currentUser]);
   
+  const handleFavorite = async (item) => {
+    if (!currentUser) {
+      showAlert({
+        title: 'Login Required',
+        message: 'Please log in to add items to your favorites.',
+        type: 'warning',
+        primaryButtonText: 'Log In',
+        secondaryButtonText: 'Cancel',
+        onPrimaryPress: () => router.push("/Login"),
+      });
+      
+      return;
+    }
+    
+    try {
+      const userDocRef = doc(db, "Users", currentUser.uid);
+      const isFavorite = isItemFavorite(item.docId);
+      
+      if (isFavorite) {
+        await updateDoc(userDocRef, {
+          Fav: arrayRemove(item.docId),
+        });
+        setFavorites(prev => prev.filter(id => id !== item.docId));
+      } else {
+        await updateDoc(userDocRef, {
+          Fav: arrayUnion(item.docId),
+        });
+        setFavorites(prev => [...prev, item.docId]);
+      }
+      
+      showAlert({
+        title: isFavorite ? 'Removed' : 'Added',
+        message: isFavorite
+          ? `${item?.name} has been removed from your favorites!`
+          : `${item?.name} has been added to your favorites!`,
+        type: isFavorite ? 'info' : 'success',
+        primaryButtonText: 'OK',
+      });
+      
+      
+    } catch (error) {
+      console.error("Error updating favorites:", error);
+      showAlert({
+        title: 'Error',
+        message: 'Failed to update favorites. Please try again.',
+        type: 'error',
+        primaryButtonText: 'OK',
+      });
+    }
+  };
+
+  const Item = ({ item }) => {
+    const isFavorite = isItemFavorite(item.docId);
     
     return (
       <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
-  <View style={styles.card}>
-  
-    <View style={{ position: 'relative', width: '100%', height: 120 }}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <View style={styles.discountContainer}>
-              <Icon name="tag" size={14} color="#fff" />
-              <Text style={styles.discountText}>{item.discount}% OFF</Text>
-            </View>
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          padding: 6,
-          borderRadius: 20,
-        }}
-        onPress={() => {
-          handleFavorite(item);
-        }}
-      >
-        <Icon name="heart" size={20} color="#fff" />
+        <View style={styles.card}>
+          <View style={{ position: 'relative', width: '100%', height: 120 }}>
+            <Image 
+              source={{ uri: item.image }} 
+              style={styles.image} 
+              resizeMethod="resize"
+              resizeMode="contain"
+              defaultSource={require('../../assets/images/loading-buffering.gif')}
+            />
+            {item.discount > 0 && (
+              <View style={styles.discountContainer}>
+                <Icon name="tag" size={14} color="#fff" />
+                <Text style={styles.discountText}>{item.discount}% OFF</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={() => handleFavorite(item)}
+            >
+              <Icon name="heart" size={20} color={isFavorite ? "#E91E63" : "#fff"} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.title} numberOfLines={2}>{item.name}</Text>
+
+          <View style={styles.priceContainer}>
+            <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
+            <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price, item.discount))} EGP</Text>
+          </View>
+          
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={() => handleAddToCart(item)}
+          >
+            <Icon name="shopping-cart" size={20} color="#fff" />
+            <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
-    </View>
-
-    <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
-
-    <View style={styles.priceContainer}>
-      <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
-      <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price , item.discount))} EGP</Text>
-    </View>
-
-    
-    <TouchableOpacity
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        paddingVertical: 8,
-        borderRadius: 20,
-        marginTop: 10, 
-        width:"100%"
-      }}
-      onPress={() => {
-        handleAddToCart(item)
-      }}
-    >
-      <Icon name="shopping-cart" size={20} color="#fff" />
-      <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
-    </TouchableOpacity>
-  </View>
-</TouchableOpacity>
-
     );
-    
   };
   
   const Categories = [
-    { id : 1,name: "Mobile", image: "https://i.ibb.co/4ZhGCKn2/apple-iphone-16-pro-desert-1-3.jpg" },
-    { id : 2,name: "Computers", image:"https://i.ibb.co/xqvrtNZD/zh449-1.jpg" },
-    { id : 3,name: "TVs", image: "https://i.ibb.co/vvTrVWFD/tv556-1.jpg" },
-    { id : 4,name: "Men", image: "https://i.ibb.co/RGzqBrwk/1.jpg" },
-    {id : 5, name: "Women", image: "https://i.ibb.co/Kzr7MVxM/1.jpg" },
-    { id : 6,name: "Kids", image: "https://i.ibb.co/20TYN7Lz/1.jpg" },
+    { id: 1, name: "Mobile", image: "https://i.ibb.co/4ZhGCKn2/apple-iphone-16-pro-desert-1-3.jpg" },
+    { id: 2, name: "Computers", image: "https://i.ibb.co/xqvrtNZD/zh449-1.jpg" },
+    { id: 3, name: "TVs", image: "https://i.ibb.co/vvTrVWFD/tv556-1.jpg" },
+    { id: 4, name: "Men", image: "https://i.ibb.co/RGzqBrwk/1.jpg" },
+    { id: 5, name: "Women", image: "https://i.ibb.co/Kzr7MVxM/1.jpg" },
+    { id: 6, name: "Kids", image: "https://i.ibb.co/20TYN7Lz/1.jpg" },
   ];
-  useEffect(() => {
-    const checkStorage = async () => {
-      try {
-        const data = await AsyncStorage.getItem('userData');
   
-        if (data !== null) {
-          const parsedData = JSON.parse(data);
-          console.log('Parsed userData:', parsedData);
-        } else {
-          console.log('No userData found in storage.');
-        }
-      } catch (error) {
-        console.log('Error reading userData from storage:', error);
-      }
-    };
-  
-    checkStorage();
-  }, []); 
   const formatNumber = (number) => {
     return new Intl.NumberFormat().format(number);
   };
-  return (
-      <>
-    <Stack  screenOptions={{ headerShown: false }} />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+  
+  const topSellingProducts = useMemo(() => {
+    return [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 10);
+  }, [products]);
+  
+  const newProducts = useMemo(() => {
+    return products.slice(-5);
+  }, [products]);
+  
+  const recommendedProducts = useMemo(() => {
+    if (preferredCategories && preferredCategories.length > 0) {
+      const filteredByCategories = products.filter(product => 
+        preferredCategories.includes(product.category)
+      );
       
-      <View style={styles.header}>
-    <TouchableOpacity onPress={() => handleLogout()}>
-      <View style={styles.headerIconContainer}>
-      <MaterialIcons name="logout" size={24} color="white" />
-      {/* <Text style={[styles.settingText, { color: 'red' }]}>Logout</Text> */}
+      if (filteredByCategories.length >= 4) {
+        return filteredByCategories.slice(0, 8);
+      }
+      
+      const randomProducts = [...products]
+        .filter(p => !filteredByCategories.some(fp => fp.docId === p.docId))
+        .sort(() => Math.random() - 0.5);
+      
+      return [...filteredByCategories, ...randomProducts].slice(0, 8);
+    } else {
+      return [...products].sort(() => Math.random() - 0.5).slice(0, 8);
+    }
+  }, [products, preferredCategories]);
+  
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Icon name="alert-circle" size={50} color="#E91E63" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchProducts}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
-  <TouchableOpacity onPress={() => router.push("/cart")}>
-    <View style={styles.headerIconContainer}>
-      <Icon name="shopping-cart" size={20} color="#fff" />
-    </View>
-  </TouchableOpacity>
-</View>
+    );
+  }
 
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleLogout}>
+            <View style={styles.headerIconContainer}>
+              <MaterialIcons name="logout" size={24} color="white" />
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => router.push("/Search")}>
+            <View style={styles.headerIconContainer}>
+              <Icon name="search" size={20} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => currentUser ? router.push("/Favorites") : router.push("/Login")}>
+            <View style={styles.headerIconContainer}>
+              <Icon name="heart" size={20} color="#fff" />
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => router.push("/cart")}>
+            <View style={styles.headerIconContainer}>
+              <Icon name="shopping-cart" size={20} color="#fff" />
+            </View>
+          </TouchableOpacity>
+        </View>
 
+        <TouchableOpacity onPress={() => router.push("/Search")}>
+          <View style={styles.searchBar}>
+            <Icon name="search" size={20} color="#888" style={styles.icon} />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Search for products..." 
+              placeholderTextColor="#aaa" 
+              editable={false} 
+            />
+          </View>
+        </TouchableOpacity>
+        
+        <Text style={styles.sectionTitle}>Categories</Text>
+        <FlatList
+          data={Categories}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => {
+              router.push({
+                pathname: "/DisplayCategories",
+                params: { title: item.name }
+              });
+            }}>
+              <View style={styles.categoryItem}>
+                <Image 
+                  source={{ uri: item.image }} 
+                  style={styles.categoryImage} 
+                  defaultSource={require('../../assets/images/loading-buffering.gif')}
+                />
+                <Text style={styles.categoryText}>{item.name}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
 
-     
-      <TouchableOpacity onPress={() => router.push("/Search")}>
-        <View style={styles.searchBar}>
-          <Icon name="search" size={20} color="#888" style={styles.icon} />
-          <TextInput 
-            style={styles.input} 
-            placeholder="Search..." 
-            placeholderTextColor="#aaa" 
-            editable={false} 
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }} 
+            style={styles.bannerimage} 
+            resizeMode="contain"
           />
         </View>
-      </TouchableOpacity>
-      
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <FlatList
-        data={Categories}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-           <TouchableOpacity onPress={() => {
-           router.push({
-             pathname: "/DisplayCategories",
-             params: { title: item.name }
-           });
-           }}>
-          <View style={styles.categoryItem}>
-           
-  <Image source={{uri : item.image}} style={styles.categoryImage} />
 
-   {selectedCategory && <DispalyCategories title = {selectedCategory}/>}
-            <Text style={styles.categoryText}>{item.name}</Text>
-          </View></TouchableOpacity>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Top Selling</Text>
+          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=top-selling")}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#E91E63" />
+          </View>
+        ) : (
+          <FlatList
+            data={topSellingProducts}
+            keyExtractor={(item) => item.docId.toString()}
+            renderItem={({ item }) => <Item item={item} />}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+          />
         )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
 
-  <View style={styles.imageContainer}>
-    <Image source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }} style={styles.bannerimage} />
-  </View>
-
-      <Text style={styles.sectionTitle}>Top Selling</Text>
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.docId.toString()}
-        renderItem={({ item }) => <Item item={item} />}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
-
-     
-      <Text style={styles.sectionTitle}>New in</Text>
-      <FlatList
-        data={products.slice(-5)}
-        keyExtractor={(item) => item.docId.toString()}
-        renderItem={({ item }) => (
-          <Item item={item} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>New Arrivals</Text>
+          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=new-arrivals")}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#E91E63" />
+          </View>
+        ) : (
+          <FlatList
+            data={newProducts}
+            keyExtractor={(item) => item.docId.toString()}
+            renderItem={({ item }) => <Item item={item} />}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.newIn}
+          />
         )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.newIn}
-      />
 
-      <Text style={styles.sectionTitle}>ٌRecommend For You </Text>
-      <FlatList
-        data={[...products].sort(() => Math.random() - 0.5).slice(0, 4)}
-        keyExtractor={(item) => item.docId.toString()}
-        renderItem={({ item }) => (
-  
-          <Item  item={item} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recommended For You</Text>
+          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=recommended")}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#E91E63" />
+          </View>
+        ) : (
+          <FlatList
+            data={recommendedProducts}
+            keyExtractor={(item) => item.docId.toString()}
+            renderItem={({ item }) => <Item item={item} />}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.newIn}
+          />
         )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.newIn}
+      </ScrollView>
+
+      <ModernAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        primaryButtonText={alertConfig.primaryButtonText}
+        secondaryButtonText={alertConfig.secondaryButtonText}
+        onPrimaryPress={alertConfig.onPrimaryPress}
+        onSecondaryPress={alertConfig.onSecondaryPress}
+        onClose={() => setAlertVisible(false)}
       />
-    </ScrollView>
     </>
   );
 };
@@ -310,7 +517,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     paddingHorizontal: 15,
-    paddingVertical: 3,
+    paddingVertical: 12,
     borderRadius: 25,
     elevation: 3,
     shadowColor: "#000",
@@ -319,40 +526,30 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginBottom: 20,
   },
-  featuredProductButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E91E63",
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+  icon: { 
+    marginRight: 10 
   },
-  featuredButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 10,
+  input: { 
+    flex: 1, 
+    fontSize: 16, 
+    color: "#333" 
   },
-  icon: {
-     marginRight: 10 
-    },
-  input: {
-     flex: 1, 
-     fontSize: 16, 
-     color: "#333" 
-    },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 10,
-    fontFamily: "cursive"
+  },
+  seeAllText: {
+    color: "#E91E63",
+    fontSize: 14,
+    fontWeight: "600",
   },
   listContainer: { 
     paddingBottom: 20 
@@ -372,27 +569,20 @@ const styles = StyleSheet.create({
     height: 330, 
     justifyContent: 'space-between', 
   },
-  
   image: {
     width: '100%', 
     height: 120,
     resizeMode: 'contain', 
     borderRadius: 10,
+    backgroundColor: '#f9f9f9',
   },
-
   title: {
     fontSize: 16,
     fontWeight: '600',
     marginTop: 10, 
     textAlign: 'center',
     color: '#333',
-  },
-
-  price: {
-    fontSize: 14,
-    color: '#757575',
-    marginTop: 8, 
-    textAlign: 'center', 
+    height: 40,
   },
   newIn: {
     paddingBottom: 20,
@@ -405,17 +595,12 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: '#f5f5f5',
   },
   categoryText: {
     marginTop: 5,
     fontSize: 14,
     fontWeight: "bold",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
   },
   headerIconContainer: {
     backgroundColor: "#000",
@@ -433,9 +618,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   imageContainer: {
-    width: 370,
-    // height: 200, 
-  
+    width: '100%',
+    marginBottom: 20,
   },
   discountContainer: {
     position: "absolute",
@@ -458,7 +642,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     color: "#888",
     fontSize: 15,
-    fontWeight : 'bold'
+    fontWeight: 'bold'
   },
   newPrice: {
     color: "#E91E63",
@@ -468,6 +652,52 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: 'column',
     alignItems: 'center',
+  },
+  loadingContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: '#E91E63',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 6,
+    borderRadius: 20,
+  },
+  addToCartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 10,
+    width: "100%",
   },
 });
 
