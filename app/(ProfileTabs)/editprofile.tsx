@@ -162,7 +162,7 @@ const EditProfile = () => {
       isValid = false;
     }
 
-    if (num && !/^\d{10}$/.test(num)) {
+    if (num && !/^\d{11}$/.test(num)) {
       newErrors.phone = "Please enter a valid 10-digit phone number";
       isValid = false;
     }
@@ -214,7 +214,7 @@ const EditProfile = () => {
         setAlertType("success");
         setTimeout(() => {
           setLoad(false);
-          router.back();
+          router.replace("../../(tabs)/profile");
         }, 2000);
       } else {
         setAlertMessage("No user is currently logged in");

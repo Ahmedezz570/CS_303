@@ -120,6 +120,7 @@ const Users = () => {
         } finally {
             setModalVisible(false);
             setSelectedUser(null);
+            setLoadingb(false);
         }
     };
 

@@ -14,7 +14,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showpass, setshowpass] = useState(true);
-
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const router = useRouter();
   const signin = async () => {
     setError('');
@@ -34,7 +34,9 @@ const Login = () => {
       if (userDoc.exists()) {
         const data = await getUserData(user.uid);
         console.log(data?.isAdmin);
-
+        const newCategories = data?.preferredCategories;
+        console.log(newCategories);
+        setSelectedCategories(newCategories);
         await AsyncStorage.setItem('DataForUser', JSON.stringify({
           uid: user.uid,
           email: user.email,
@@ -49,7 +51,9 @@ Alert.alert("Blocked","This account is blocked")
         }
         else {
           router.replace('/(tabs)');
-          router.push('/home');
+          router.push({pathname:'/home',
+            params: { categories: JSON.stringify(newCategories) }}
+          );
         }
       } else {
         setError('User not found.');

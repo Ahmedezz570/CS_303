@@ -15,6 +15,7 @@ import ModernAlert from '../../components/ModernAlert';
 const HomePage = () => {
   const { categories } = useLocalSearchParams();
   const selectedCategories = categories ? JSON.parse(categories) : [];
+  const [storedCategories, setStoredCategories] = useState([]);
 
   console.log(selectedCategories); 
   const [products, setProducts] = useState([]);
@@ -39,30 +40,77 @@ const HomePage = () => {
   const showAlert = (config) => {
     setAlertConfig(config);
     setAlertVisible(true);
+
   };
-  const fetchAndFilterProducts = async () => {
-    const querySnapshot = await getDocs(collection(db, "products"));
-    const allItems = [];
-    querySnapshot.forEach((doc) => {
-      allItems.push({ docId: doc.id, ...doc.data() });
-    });
-  
-    const filtered = allItems.filter(item =>
-      selectedCategories.includes(item.category)
-    );
-  
-    setFilteredItems(filtered);
+  const storeCategories = async () => {
+    try {
+      if (selectedCategories.length > 0) {
+        
+        const existing = await AsyncStorage.getItem('categories');
+        if (!existing) {
+          await AsyncStorage.setItem('categories', JSON.stringify(selectedCategories));
+          console.log('Categories saved to AsyncStorage');
+        } else {
+          console.log('Categories already exist in AsyncStorage');
+        }
+      }
+    } catch (error) {
+      console.log('Error storing categories:', error);
+    }
   };
+
+  const getStoredCategories = async () => {
+    try {
+      const value = await AsyncStorage.getItem('categories');
+      if (value) {
+        const parsed = JSON.parse(value);
+        setStoredCategories(parsed);
+        console.log('Fetched categories from AsyncStorage:', parsed);
+
+       
+        fetchAndFilterProducts(parsed);
+      } else {
+        console.log('No categories found in AsyncStorage');
+      }
+    } catch (error) {
+      console.log('Error fetching categories:', error);
+    }
+};
+const fetchAndFilterProducts = async (categoriesToUse) => {
+  const querySnapshot = await getDocs(collection(db, "products"));
+  const allItems = [];
+  querySnapshot.forEach((doc) => {
+    allItems.push({ docId: doc.id, ...doc.data() });
+  });
+
+  console.log("this is in Async", categoriesToUse);
+  const filtered = allItems.filter(item =>
+    categoriesToUse.includes(item.category)
+  );
+
+  setFilteredItems(filtered);
+};
+
   
-  useEffect(() => {
-    fetchAndFilterProducts();
-  }, []);
+useEffect(() => {
+  const init = async () => {
+      await storeCategories();  
+      await getStoredCategories();  
+  };
+  init();
+}, []);
+
+
+
   
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
       await AsyncStorage.removeItem('DataForUser');
+      await AsyncStorage.removeItem('categories');
+      console.log('Categories removed from AsyncStorage');
       router.replace("/Login"); 
+      Alert.alert("Success", "Logout successful");
     } catch (error) {
       Alert.alert("Error", "There was an issue logging out. Please try again.");
       console.error(error);  
