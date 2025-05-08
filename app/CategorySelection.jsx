@@ -31,12 +31,12 @@ const CategorySelection = () => {
   };
 
   const categories = [
-    { id: 1, name: "Mobile", image: "https://i.ibb.co/4ZhGCKn/apple-iphone-16-pro-desert-1-3.jpg" },
-    { id: 2, name: "Computers", image: "https://i.ibb.co/xqvrtNZ/zh449-1.jpg" },
-    { id: 3, name: "TVs", image: "https://i.ibb.co/vvTrVWF/tv556-1.jpg" },
-    { id: 4, name: "Men", image: "https://i.ibb.co/RGzqBrw/1.jpg" },
-    { id: 5, name: "Women", image: "https://i.ibb.co/Kzr7MVx/1.jpg" },
-    { id: 6, name: "Kids", image: "https://i.ibb.co/20TYN7L/1.jpg" },
+    { id: 1, name: "Mobile", image: "https://i.ibb.co/4ZhGCKn2/apple-iphone-16-pro-desert-1-3.jpg" },
+    { id: 2, name: "Computers", image: "https://i.ibb.co/xqvrtNZD/zh449-1.jpg" },
+    { id: 3, name: "TVs", image: "https://i.ibb.co/vvTrVWFD/tv556-1.jpg" },
+    { id: 4, name: "Men", image: "https://i.ibb.co/RGzqBrwk/1.jpg" },
+    { id: 5, name: "Women", image: "https://i.ibb.co/Kzr7MVxM/1.jpg" },
+    { id: 6, name: "Kids", image: "https://i.ibb.co/20TYN7Lz/1.jpg" },
   ];
 
   const toggleCategory = (categoryName) => {
@@ -67,8 +67,13 @@ const CategorySelection = () => {
           onboardingComplete: true,
         });
       }
+      console.log("Selected Categories:", selectedCategories);
 
-      router.replace('/(tabs)/home');
+      router.replace({
+        pathname: '/(tabs)/home',
+        params: { categories: JSON.stringify(selectedCategories) },
+      });
+      
       
     } catch (error) {
       console.error("Error saving preferred categories:", error);
@@ -129,13 +134,13 @@ const CategorySelection = () => {
           {!loading && <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 5 }} />}
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.skipButton}
           onPress={() => router.replace('/(tabs)/home')}
           disabled={loading}
         >
           <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <ModernAlert

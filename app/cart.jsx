@@ -6,30 +6,12 @@ import { db } from "../Firebase/Firebase.jsx";
 import { getAuth } from "firebase/auth";
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
-import ModernAlert from '../components/ModernAlert';
-
 const CartScreen = () => {
   const router = useRouter();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCheckoutComplete, setIsCheckoutComplete] = useState(false);
   const animation = useRef(null);
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({
-    title: '',
-    message: '',
-    type: 'info',
-    primaryButtonText: 'OK',
-    secondaryButtonText: 'Cancel',
-    onPrimaryPress: () => {},
-    onSecondaryPress: () => {}
-  });
-
-  const showAlert = (config) => {
-    setAlertConfig(config);
-    setAlertVisible(true);
-  };
-
   useEffect(() => {
     const fetchCart = async () => {
       try {
@@ -94,44 +76,6 @@ const CartScreen = () => {
 
     setCart(prev => prev.filter(i => i.id !== id));
   };
-
-  const handleDeleteItem = (item) => {
-    showAlert({
-      title: 'Remove Item',
-      message: 'Are you sure you want to remove this item from your cart?',
-      type: 'warning',
-      primaryButtonText: 'Remove',
-      secondaryButtonText: 'Cancel',
-      onPrimaryPress: () => {
-        deleteItemFromCart(item.id);
-      },
-    });
-  };
-
-  const deleteItemFromCart = async (itemId) => {
-    try {
-      const user = getAuth().currentUser;
-      if (user) {
-        await deleteDoc(doc(db, 'Users', user.uid, 'cart', itemId));
-        showAlert({
-          title: 'Success',
-          message: 'Item has been removed from your cart',
-          type: 'success',
-          primaryButtonText: 'OK',
-          secondaryButtonText: '',
-        });
-      }
-    } catch (error) {
-      console.error('Error removing item: ', error);
-      showAlert({
-        title: 'Error',
-        message: 'Failed to remove item from cart',
-        type: 'error',
-        primaryButtonText: 'OK',
-      });
-    }
-  };
-
   const user = getAuth().currentUser;
   const clearCart = async () => {
     
@@ -160,14 +104,7 @@ const CartScreen = () => {
         });
 
         if (cartItems.length === 0) {
-            showAlert({
-              title: 'Empty Cart',
-              message: 'Your cart is empty. Add some items before checking out.',
-              type: 'info',
-              primaryButtonText: 'Browse Products',
-              secondaryButtonText: 'Cancel',
-              onPrimaryPress: () => router.push('/(tabs)/home'),
-            });
+            Alert.alert("Cart is empty", "There are no items to checkout.");
             return;
         }
 
@@ -190,12 +127,7 @@ const CartScreen = () => {
 
     } catch (error) {
         console.error("Error during checkout:", error);
-        showAlert({
-          title: 'Error',
-          message: 'Could not complete checkout. Please try again.',
-          type: 'error',
-          primaryButtonText: 'OK',
-        });
+        Alert.alert("Error", "Could not complete checkout. Please try again.");
     }
 };
 const applyDiscount = (price , discountPercentage ) => {
@@ -286,7 +218,7 @@ if (isCheckoutComplete) {
                 <Text style={styles.quantityText}>+</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteItem(item)} style={styles.deleteButton}>
+            <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.deleteButton}>
               <Text style={styles.deleteText}>Delete</Text>
             </TouchableOpacity>
           </View>
@@ -333,17 +265,6 @@ if (isCheckoutComplete) {
      
         
       )}
-      <ModernAlert
-        visible={alertVisible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        type={alertConfig.type}
-        primaryButtonText={alertConfig.primaryButtonText}
-        secondaryButtonText={alertConfig.secondaryButtonText}
-        onPrimaryPress={alertConfig.onPrimaryPress}
-        onSecondaryPress={alertConfig.onSecondaryPress}
-        onClose={() => setAlertVisible(false)}
-      />
     </View>
   );
 };
@@ -368,6 +289,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    // shadowColor: '#000',
+    // shadowOpacity: 0.1,
+    // shadowRadius: 5,
+    // elevation: 3,
   },
   clearButton: {
     backgroundColor: 'red',

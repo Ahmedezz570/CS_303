@@ -9,7 +9,7 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const Gengder = ({ modalVisible_1, setModalVisible_1 , onSelect}) => {
-  const [selectedOption, setSelectedOption] = useState("Men");
+  const [selectedOption, setSelectedOption] = useState("");
 
   const options = [
     "Men",

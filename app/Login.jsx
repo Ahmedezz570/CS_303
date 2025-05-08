@@ -15,7 +15,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState(null);
   const [alertType, setAlertType] = useState('success');
-
+ const [selectedCategories, setSelectedCategories] = useState([]);
   const router = useRouter();
   const signin = async () => {
     setError('');
@@ -25,16 +25,21 @@ const Login = () => {
       return;
     }
     setLoading(true);
-
     try {
       const getUser = await signInWithEmailAndPassword(auth, email, password);
-      const user = getUser.user;
+      const user = auth.currentUser;
+      console.log("User:", user);
       const userDoc = await getDoc(doc(db, "Users", user.uid));
-
+      
+     
       if (userDoc.exists()) {
         const data = await getUserData(user.uid);
         console.log(data?.isAdmin);
-
+        console.log(data?.preferredCategories);
+        const newCategories = data?.preferredCategories;
+        console.log(newCategories);
+        setSelectedCategories(newCategories);
+        console.log("Selected Categories (direct):", newCategories);
         await AsyncStorage.setItem('DataForUser', JSON.stringify({
           uid: user.uid,
           email: user.email,
@@ -53,8 +58,13 @@ const Login = () => {
           setAlertMessage('Welcome back! Login successful');
           setAlertType('success');
           setTimeout(() => {
-            router.replace('/(tabs)');
-            router.push('/home');
+            router.replace({
+              pathname: '/(tabs)/',
+             
+            });
+            router.push({pathname:'/home',
+              params: { categories: JSON.stringify(newCategories) }}
+            );
           }, 1500);
         }
       } else {

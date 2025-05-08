@@ -1,7 +1,7 @@
 import Icon from "react-native-vector-icons/Feather";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, RefreshControl } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter , useLocalSearchParams} from "expo-router";
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 24;
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,11 +9,14 @@ import {db} from '../../Firebase/Firebase';
 import { collection, onSnapshot, arrayUnion, arrayRemove, query, orderBy, limit, where } from "firebase/firestore";
 import { MaterialIcons } from '@expo/vector-icons';
 import {auth} from "../../Firebase/Firebase";
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
-import { getUserData } from "../../Firebase/Firebase";
-import ModernAlert from '../../components/ModernAlert';
+import { doc, getDoc, setDoc, updateDoc, increment ,getDocs} from 'firebase/firestore';
 
+import ModernAlert from '../../components/ModernAlert';
 const HomePage = () => {
+  const { categories } = useLocalSearchParams();
+  const selectedCategories = categories ? JSON.parse(categories) : [];
+
+  console.log(selectedCategories); 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,8 +24,6 @@ const HomePage = () => {
   const [favorites, setFavorites] = useState([]);
   const currentUser = auth.currentUser;
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [preferredCategories, setPreferredCategories] = useState([]);
   
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
@@ -34,12 +35,29 @@ const HomePage = () => {
     onPrimaryPress: () => {},
     onSecondaryPress: () => {}
   });
-
+  const [filteredItems, setFilteredItems] = useState([]);
   const showAlert = (config) => {
     setAlertConfig(config);
     setAlertVisible(true);
   };
-
+  const fetchAndFilterProducts = async () => {
+    const querySnapshot = await getDocs(collection(db, "products"));
+    const allItems = [];
+    querySnapshot.forEach((doc) => {
+      allItems.push({ docId: doc.id, ...doc.data() });
+    });
+  
+    const filtered = allItems.filter(item =>
+      selectedCategories.includes(item.category)
+    );
+  
+    setFilteredItems(filtered);
+  };
+  
+  useEffect(() => {
+    fetchAndFilterProducts();
+  }, []);
+  
   const handleLogout = async () => {
     try {
       await auth.signOut(); 
@@ -92,7 +110,7 @@ const fetchProducts = useCallback(async () => {
       
       if (userDoc.exists() && userDoc.data().Fav) {
         setFavorites(userDoc.data().Fav || []);
-        setPreferredCategories(userDoc.data().preferredCategories || []);
+        
       }
     } catch (error) {
       console.error("Error fetching favorites:", error);
@@ -120,7 +138,8 @@ const fetchProducts = useCallback(async () => {
     setRefreshing(true);
     fetchProducts();
     fetchFavorites();
-  }, [fetchProducts, fetchFavorites]);
+    fetchAndFilterProducts()
+  }, [fetchProducts, fetchFavorites , fetchAndFilterProducts]);
 
   const applyDiscount = (price, discountPercentage) => {
     return Math.floor(price - (price * discountPercentage) / 100);
@@ -164,7 +183,7 @@ const fetchProducts = useCallback(async () => {
         title: 'Added Successfully',
         message: `${item.name} has been added to your shopping cart`,
         type: 'cart',
-        primaryButtonText: 'Continue Shopping',
+        primaryButtonText: 'Continue',
         secondaryButtonText: 'Go to Cart',
         onSecondaryPress: () => router.push("/cart"),
       });
@@ -304,25 +323,7 @@ const fetchProducts = useCallback(async () => {
     return products.slice(-5);
   }, [products]);
   
-  const recommendedProducts = useMemo(() => {
-    if (preferredCategories && preferredCategories.length > 0) {
-      const filteredByCategories = products.filter(product => 
-        preferredCategories.includes(product.category)
-      );
-      
-      if (filteredByCategories.length >= 4) {
-        return filteredByCategories.slice(0, 8);
-      }
-      
-      const randomProducts = [...products]
-        .filter(p => !filteredByCategories.some(fp => fp.docId === p.docId))
-        .sort(() => Math.random() - 0.5);
-      
-      return [...filteredByCategories, ...randomProducts].slice(0, 8);
-    } else {
-      return [...products].sort(() => Math.random() - 0.5).slice(0, 8);
-    }
-  }, [products, preferredCategories]);
+ 
   
   if (error) {
     return (
@@ -353,17 +354,9 @@ const fetchProducts = useCallback(async () => {
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity onPress={() => router.push("/Search")}>
-            <View style={styles.headerIconContainer}>
-              <Icon name="search" size={20} color="#fff" />
-            </View>
-          </TouchableOpacity>
+         
           
-          <TouchableOpacity onPress={() => currentUser ? router.push("/Favorites") : router.push("/Login")}>
-            <View style={styles.headerIconContainer}>
-              <Icon name="heart" size={20} color="#fff" />
-            </View>
-          </TouchableOpacity>
+        
           
           <TouchableOpacity onPress={() => router.push("/cart")}>
             <View style={styles.headerIconContainer}>
@@ -420,9 +413,7 @@ const fetchProducts = useCallback(async () => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Selling</Text>
-          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=top-selling")}>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
+         
         </View>
         
         {loading ? (
@@ -442,9 +433,7 @@ const fetchProducts = useCallback(async () => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>New Arrivals</Text>
-          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=new-arrivals")}>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
+          
         </View>
         
         {loading ? (
@@ -464,9 +453,7 @@ const fetchProducts = useCallback(async () => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recommended For You</Text>
-          <TouchableOpacity onPress={() => router.push("/DisplayCategories?filter=recommended")}>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
+        
         </View>
         
         {loading ? (
@@ -475,8 +462,8 @@ const fetchProducts = useCallback(async () => {
           </View>
         ) : (
           <FlatList
-            data={recommendedProducts}
-            keyExtractor={(item) => item.docId.toString()}
+            data={filteredItems.sort(() => Math.random() - 0.5).slice(0, 8)}
+            keyExtractor={(item) => item.docId}
             renderItem={({ item }) => <Item item={item} />}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -517,7 +504,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingVertical: 6,
     borderRadius: 25,
     elevation: 3,
     shadowColor: "#000",

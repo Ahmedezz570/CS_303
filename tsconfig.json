@@ -21,7 +21,7 @@
     "app/singlepage.jsx", 
     "app/Review.jsx", 
     "app/cart.jsx", 
-    "app/(tabs)/notifications.jsx", 
+    "components/notifications.jsx", 
     "app/index.jsx", 
     "app/(ProfileTabs)/orders.tsx", 
     "app/DisplayCategories.jsx", 

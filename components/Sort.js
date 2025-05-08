@@ -9,10 +9,10 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const SortByModal = ({ modalVisible, setModalVisible , onSort }) => {
-  const [selectedOption, setSelectedOption] = useState("Newest");
+  const [selectedOption, setSelectedOption] = useState("");
 
   const options = [
-    "Newest",
+
     "Lowest - Highest Price",
     "Highest - Lowest Price",
   ];

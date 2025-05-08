@@ -1,59 +1,62 @@
-import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from "react";
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity , TextInput} from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../Firebase/Firebase.jsx";
-const Products = () => {
-  const [data, setData] = useState([]); 
-  const [filteredData, setFilteredData] = useState([]);  
-  const router = useRouter();
 
-  useEffect(() => {
-    const getProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const productsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setData(productsData);
-      setFilteredData(productsData);  
-    };
-    getProducts();
-  }, []);
-  
-  const handleSearch = (text) => {
-    const filtered = data.filter(item => item.name.toLowerCase().includes(text.toLowerCase()));
-    setFilteredData(filtered);
+const { width } = Dimensions.get('window');
+const cardWidth = (width / 2) - 24;
+import {db} from '../../Firebase/Firebase';
+import { collection, onSnapshot } from "firebase/firestore";
+
+
+const ProductList = () => {
+  const router = useRouter(); 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState([]);
+  const applyDiscount = (price , discountPercentage ) => {
+    return Math.floor(price - (price * discountPercentage) / 100);
   };
 
+  const filteredProducts = products.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+    useEffect(() => {
+
+      const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+        const usersData = snapshot.docs.map((doc) => ({
+          docId: doc.id,  ...doc.data(),
+        }));
+        setProducts(usersData);
+      });
+  
+      return () => unsubscribe();
+    }, []);
+    console.log("Data:", products);
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Text style={styles.title}>Our Products</Text>
-        <TextInput 
-          placeholder="Search" 
-          style={styles.searchInput}
-          onChangeText={handleSearch}  
-        />
-      </View>
+      <Text style={styles.heading}>All Products</Text>
+      <TextInput
+        placeholder="Search products..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        style={styles.searchInput}
+      />
       <FlatList
-        numColumns={2}
-        data={filteredData}  
-        keyExtractor={(item) => item.id.toString()}
+        data={filteredProducts}
+        keyExtractor={(item) => item.docId}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card} 
-            onPress={() => router.push({ pathname: "/singlepage", params: { id: item.id } })} 
-          >
-            <Image 
-              source={{ uri: item.image || { uri: "https://randomuser.me/api/portraits/men/1.jpg" } }}  
-              style={styles.image} 
-            />
-            <Text style={styles.name}>{item.name}</Text>
-
-            <Text style={styles.price}>{item.price} EGP</Text>
+          <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
+            <View style={styles.card}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+              <View style={styles.textContainer}>
+                <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
+                <Text style={styles.price}>EGP {applyDiscount(item.price,item.discount)}</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         )}
+        contentContainerStyle={styles.listContainer}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -62,63 +65,69 @@ const Products = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#FAE5D3',
+    paddingTop: 20,
+    backgroundColor: '#f5f5f5',
   },
-  searchContainer: {
-    backgroundColor: '#fff',
-    padding: '3%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 30,
-    marginBottom: 5,
-  },
-  title: {
-    fontSize: 15,
+  heading: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: '2%',
-    color: 'black',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#333',
   },
-  searchInput: {
-    color: 'black',
-    height: 50,
-    width: '90%',
-    borderWidth: 5,
-    borderColor: '#000',
-    marginBottom: '5%',
-    paddingHorizontal: 10,
-    borderRadius: 100,
-    backgroundColor: '#ffffff',
+  listContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 20,
   },
   card: {
-    backgroundColor: '#ffff',
-    borderRadius: 20,
-    margin: 1,
-    alignItems: 'center',
+    width: cardWidth,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    margin: 8,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-    width: '49%',
-    aspectRatio: 1,
-    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    alignItems: 'center',
+    height: 250,
   },
   image: {
-    width: '75%',
-    height: '60%',
-    margin: '5%',
-    alignSelf: 'center',
+    width: '100%',
+    height: 120, 
     resizeMode: 'contain',
-    marginBottom: '2%',
+    borderRadius: 10,
   },
-  name: {
-    fontSize: 15,
+  
+  textContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 8,
+  },
+  title: {
+    fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#222',
   },
   price: {
-    fontSize: 16,
-    color: 'green',
+    fontSize: 14,
+    color: 'red',
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    marginHorizontal: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
 });
 
-export default Products;
+export default ProductList;

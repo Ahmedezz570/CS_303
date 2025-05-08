@@ -120,7 +120,9 @@ const SearchFilterScreen = () => {
     setFilteredData(filtered);
     setGenderModalVisible(false); 
 };
-  
+const applyDiscount = (price , discountPercentage ) => {
+  return Math.floor(price - (price * discountPercentage) / 100);
+};
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -129,7 +131,7 @@ const SearchFilterScreen = () => {
       <View style={styles.productCard}>
         <Image source={{ uri: item.image }} style={styles.productImage} />
         <Text style={styles.productTitle} numberOfLines={3}>{item.name}</Text>
-        <Text style={styles.productPrice}>EGP {item.price}</Text>
+        <Text style={styles.productPrice}>EGP {applyDiscount(item.price, item.discount)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -139,7 +141,7 @@ const SearchFilterScreen = () => {
     setFilteredData(data);
     setMinPrice(0);
     setMaxPrice(1000000);
-    setSortOption("Newest");
+    setSortOption("");
     setSelectedGender(null);
   };
   return (
