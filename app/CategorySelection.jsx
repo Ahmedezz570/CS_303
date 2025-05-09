@@ -21,8 +21,8 @@ const CategorySelection = () => {
     type: 'info',
     primaryButtonText: 'OK',
     secondaryButtonText: '',
-    onPrimaryPress: () => {},
-    onSecondaryPress: () => {}
+    onPrimaryPress: () => { },
+    onSecondaryPress: () => { }
   });
 
   const showAlert = (config) => {
@@ -68,13 +68,12 @@ const CategorySelection = () => {
         });
       }
       console.log("Selected Categories:", selectedCategories);
-
       router.replace({
         pathname: '/(tabs)/home',
         params: { categories: JSON.stringify(selectedCategories) },
       });
-      
-      
+
+
     } catch (error) {
       console.error("Error saving preferred categories:", error);
       showAlert({
@@ -123,7 +122,7 @@ const CategorySelection = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.continueButton, selectedCategories.length === 0 && styles.disabledButton]}
           onPress={handleContinue}
           disabled={loading}
@@ -133,14 +132,6 @@ const CategorySelection = () => {
           </Text>
           {!loading && <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 5 }} />}
         </TouchableOpacity>
-        
-        {/* <TouchableOpacity 
-          style={styles.skipButton}
-          onPress={() => router.replace('/(tabs)/home')}
-          disabled={loading}
-        >
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity> */}
       </View>
 
       <ModernAlert

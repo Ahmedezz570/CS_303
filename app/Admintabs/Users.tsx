@@ -8,14 +8,14 @@ import {
     ActivityIndicator,
     Image,
     RefreshControl,
-    TextInput,
-    Modal
+    TextInput
 } from 'react-native';
 import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
 import { Ionicons, MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import MiniAlert from '../(ProfileTabs)/MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
+import DeleteModal from '../../components/DeleteModal';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface User {
@@ -39,9 +39,7 @@ const Users = () => {
     const [alertType, setAlertType] = useState<'success' | 'error'>('success');
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [loadingb, setLoadingb] = useState(false);
-
-
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -107,7 +105,7 @@ const Users = () => {
 
     const deleteUser = async () => {
         if (!selectedUser) return;
-        setLoadingb(true);
+        setDeleteLoading(true);
         try {
             await deleteUserFromServer(selectedUser.id);
             await deleteDoc(doc(db, "Users", selectedUser.id));
@@ -120,7 +118,7 @@ const Users = () => {
         } finally {
             setModalVisible(false);
             setSelectedUser(null);
-            setLoadingb(false);
+            setDeleteLoading(false);
         }
     };
 
@@ -179,7 +177,6 @@ const Users = () => {
                             <FontAwesome name="user" size={20} color="#fff" />
                         </View>
                     )}
-
                     <View style={styles.userInfoContainer}>
                         <View style={styles.nameRow}>
                             <Text style={styles.username}>{item.username || 'No name'}</Text>
@@ -309,113 +306,23 @@ const Users = () => {
                     />
                 )}
 
-                <Modal
+                <DeleteModal
                     visible={modalVisible}
-                    animationType='slide'
-                    transparent={true}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <MaterialIcons name="warning" size={36} color="#f39c12" />
-                                <Text style={styles.modalTitle}>Delete {String(selectedUser?.username).toUpperCase()}</Text>
-                            </View>
-
-                            <Text style={styles.modalText}>
-                                Are you sure you want to delete this user? This action cannot be undone.
-                            </Text>
-
-                            <View style={styles.modalButtons}>
-                                <TouchableOpacity
-                                    style={[styles.modalButton, styles.cancelButton]}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    style={[styles.modalButton, styles.confirmButton]}
-                                    onPress={deleteUser}
-                                    disabled={loadingb}
-                                >
-                                    {loadingb ? (
-                                        <ActivityIndicator size="small" color="#000" />
-                                    ) : (
-                                        <Text style={styles.confirmButtonText}>Delete</Text>)}
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
+                    onClose={() => setModalVisible(false)}
+                    onConfirm={deleteUser}
+                    isLoading={deleteLoading}
+                    title={`Delete ${selectedUser?.username || 'User'}`}
+                    message="Are you sure you want to delete this user? This action cannot be undone."
+                    warningMessage={selectedUser?.isAdmin ? "Carufully! This User Is Admin" : undefined}
+                    confirmButtonText="Delete"
+                    cancelButtonText="Cancel"
+                />
             </View>
         </>
     );
 };
 
 const styles = StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-        width: '85%',
-        backgroundColor: '#fff',
-        borderRadius: 15,
-        padding: 22,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    modalHeader: {
-        alignItems: 'center',
-        marginBottom: 15,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-        marginTop: 10,
-    },
-    modalText: {
-        fontSize: 16,
-        color: '#555',
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-    },
-    modalButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        minWidth: 120,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cancelButton: {
-        backgroundColor: '#f1f2f6',
-        marginRight: 10,
-    },
-    cancelButtonText: {
-        color: '#555',
-        fontWeight: 'bold',
-    },
-    confirmButton: {
-        backgroundColor: '#ff6b6b',
-    },
-    confirmButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-    },
     container: {
         flex: 1,
         backgroundColor: 'white',

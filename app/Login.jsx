@@ -1,12 +1,13 @@
-import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db, getUserData } from '../Firebase/Firebase';
+import { auth, db, getUserData, useGoogleSignIn } from '../Firebase/Firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/FontAwesome';  
+import Icon from 'react-native-vector-icons/FontAwesome';
+import MiniAlert from '../components/MiniAlert';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,13 +16,26 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showpass, setshowpass] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+  const [load, setLoad] = useState(false);
   const router = useRouter();
+
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
+  };
+
   const signin = async () => {
     setError('');
     if (!email || !password) {
       setError('Please fill all fields');
-      Alert.alert("Error", "please write email and password");
-
+      showAlert('Please write email and password', 'error');
       return;
     }
     setLoading(true);
@@ -46,24 +60,25 @@ const Login = () => {
           router.replace('./Admintabs');
           router.push('./Admintabs/Admin');
         }
-        else if(data?.isBlocked === true){
-Alert.alert("Blocked","This account is blocked")
+        else if (data?.isBlocked === true) {
+          showAlert('This account is blocked', 'error');
         }
         else {
           router.replace('/(tabs)');
-          router.push({pathname:'/home',
-            params: { categories: JSON.stringify(newCategories) }}
+          router.push({
+            pathname: '/home',
+            params: { categories: JSON.stringify(newCategories) }
+          }
           );
         }
       } else {
         setError('User not found.');
-      Alert.alert("Error","wrong Email or password")
+        showAlert('Wrong Email or password', 'error');
       }
 
     } catch (error) {
       setError('Invalid email or password.');
-      Alert.alert("Error","wrong Email or password")
-      Alert.alert("Error","wrong Email or password")
+      showAlert('Wrong Email or password', 'error');
     }
     setLoading(false);
   }
@@ -71,8 +86,17 @@ Alert.alert("Blocked","This account is blocked")
   const reg = () => {
     router.push('/Register');
   }
+
   return (
     <View style={styles.fl}>
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
+
       <View style={styles.container}>
         <Text style={styles.title}>Sign in</Text>
 
@@ -85,14 +109,14 @@ Alert.alert("Blocked","This account is blocked")
         />
 
         <View style={styles.pass}>
-                <TextInput style={styles.passinput} placeholder="Password"  secureTextEntry={showpass} value={password} onChangeText={setPassword} />
-              { password.length!=0&& <TouchableOpacity style={styles.passbutt} onPress={() => setshowpass(!showpass)}>
-                <Icon name={showpass ? 'eye-slash' : 'eye'} size={24} color="black" />
-              </TouchableOpacity>}
-              </View>
+          <TextInput style={styles.passinput} placeholder="Password" secureTextEntry={showpass} value={password} onChangeText={setPassword} />
+          {password.length != 0 && <TouchableOpacity style={styles.passbutt} onPress={() => setshowpass(!showpass)}>
+            <Icon name={showpass ? 'eye-slash' : 'eye'} size={24} color="black" />
+          </TouchableOpacity>}
+        </View>
 
 
-        <TouchableOpacity style={styles.button} onPress={signin}>
+        <TouchableOpacity style={styles.button} onPress={signin} disabled={load}>
           <Text style={styles.buttonText}>Sign In</Text>
         </TouchableOpacity>
         <View style={styles.semif}>
@@ -104,8 +128,8 @@ Alert.alert("Blocked","This account is blocked")
 
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity style={styles.button1} >
+
+        <TouchableOpacity style={styles.button1}>
           <FontAwesome name='google' size={30} style={styles.icon}></FontAwesome>
 
           <Text style={styles.button1text}>Continue With Google</Text>
@@ -140,23 +164,23 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     alignItems: 'center',
   },
-  pass:{
-    width:'95%',
-    flexDirection:'row',
-    },
-    passinput:{
-      width:'100%',
-      height: 40,
-      backgroundColor: 'rgb(226, 226, 226)',
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        marginBottom: Dimensions.get('window').height * 0.01,
-        zIndex:-1,
-    },
-    passbutt:{
-    marginHorizontal:-40,
-    marginVertical:7,
-    },
+  pass: {
+    width: '95%',
+    flexDirection: 'row',
+  },
+  passinput: {
+    width: '100%',
+    height: 40,
+    backgroundColor: 'rgb(226, 226, 226)',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: Dimensions.get('window').height * 0.01,
+    zIndex: -1,
+  },
+  passbutt: {
+    marginHorizontal: -40,
+    marginVertical: 7,
+  },
   title: {
     fontSize: 30,
     fontWeight: 400,

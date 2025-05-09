@@ -1,11 +1,13 @@
 import { Stack, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { Ionicons, AntDesign, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDoc, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../../Firebase/Firebase';
-import MiniAlert from './MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
+import AddressModal from '../../components/AddressModal';
+import DeleteModal from '../../components/DeleteModal';
 
 interface Address {
   id: string;
@@ -86,24 +88,14 @@ const address = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [newAddressModalVisible, setNewAddressModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [currentAddress, setCurrentAddress] = useState<Address | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertType, setAlertType] = useState<'success' | 'error'>('success');
-  const [formData, setFormData] = useState<Address>({
-    id: '',
-    FullName: '',
-    Street: '',
-    City: '',
-    State: '',
-    ZIP: '',
-    Phone: '',
-    isDefault: false,
-  });
 
   useEffect(() => {
     fetchUserAddresses();
@@ -168,8 +160,8 @@ const address = () => {
 
   const handleEdit = (address: Address) => {
     setCurrentAddress(address);
-    setFormData(address);
-    setEditModalVisible(true);
+    setIsEditing(true);
+    setModalVisible(true);
   };
 
   const handleDelete = (id: string) => {
@@ -341,13 +333,7 @@ const address = () => {
     }
   };
 
-  const handleUpdateAddress = async () => {
-    if (!formData.FullName || !formData.Street || !formData.City || !formData.State || !formData.ZIP || !formData.Phone) {
-      setAlertMsg('Please fill in all required fields');
-      setAlertType('error');
-      return;
-    }
-
+  const handleUpdateAddress = async (formData: Address) => {
     try {
       setLoading(true);
       const userId = auth.currentUser?.uid;
@@ -398,7 +384,7 @@ const address = () => {
       });
 
       await fetchUserAddresses();
-      setEditModalVisible(false);
+      setModalVisible(false);
       setCurrentAddress(null);
       setAlertMsg("Address updated successfully");
       setAlertType('success');
@@ -412,26 +398,12 @@ const address = () => {
   };
 
   const handleAddNew = () => {
-    setFormData({
-      id: Date.now().toString(),
-      FullName: '',
-      Street: '',
-      City: '',
-      State: '',
-      ZIP: '',
-      Phone: '',
-      isDefault: false,
-    });
-    setNewAddressModalVisible(true);
+    setCurrentAddress(null);
+    setIsEditing(false);
+    setModalVisible(true);
   };
 
-  const handleCreateAddress = async () => {
-    if (!formData.FullName || !formData.Street || !formData.City || !formData.State || !formData.ZIP || !formData.Phone) {
-      setAlertMsg('Please fill in all required fields');
-      setAlertType('error');
-      return;
-    }
-
+  const handleCreateAddress = async (formData: Address) => {
     try {
       setLoading(true);
       const userId = auth.currentUser?.uid;
@@ -467,7 +439,7 @@ const address = () => {
       });
 
       await fetchUserAddresses();
-      setNewAddressModalVisible(false);
+      setModalVisible(false);
       setAlertMsg("New address added successfully");
       setAlertType('success');
     } catch (error) {
@@ -479,8 +451,12 @@ const address = () => {
     }
   };
 
-  const handleFormChange = (field: keyof Address, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleSubmitAddress = async (formData: Address) => {
+    if (isEditing) {
+      await handleUpdateAddress(formData);
+    } else {
+      await handleCreateAddress(formData);
+    }
   };
 
   return (
@@ -503,54 +479,17 @@ const address = () => {
           />
         )}
 
-        <Modal
+        <DeleteModal
           visible={deleteModalVisible}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={() => setDeleteModalVisible(false)}
-        >
-          <View style={styles.deleteModalOverlay}>
-            <View style={styles.deleteModalContent}>
-              <View style={styles.deleteModalHeader}>
-                <MaterialIcons name="delete" size={36} color="#FF5252" />
-                <Text style={styles.deleteModalTitle}>
-                  Delete Address
-                </Text>
-              </View>
-
-              <Text style={styles.deleteModalText}>
-                Are you sure you want to delete this address?
-                {selectedAddressId && addresses.find(a => a.id === selectedAddressId)?.isDefault && (
-                  <Text style={styles.warningText}>
-                    {"\n\n"}Warning: This is your default address.
-                  </Text>
-                )}
-              </Text>
-
-              <View style={styles.deleteModalButtons}>
-                <TouchableOpacity
-                  style={[styles.deleteModalButton, styles.cancelButton]}
-                  onPress={() => setDeleteModalVisible(false)}
-                  disabled={deleteLoading}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.deleteModalButton, styles.confirmButton]}
-                  onPress={confirmDeleteAddress}
-                  disabled={deleteLoading}
-                >
-                  {deleteLoading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text style={styles.confirmButtonText}>Delete</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setDeleteModalVisible(false)}
+          onConfirm={confirmDeleteAddress}
+          isLoading={deleteLoading}
+          title="Delete Address"
+          message="Are you sure you want to delete this address?"
+          warningMessage={selectedAddressId && addresses.find(a => a.id === selectedAddressId)?.isDefault
+            ? "Warning: This is your default address."
+            : undefined}
+        />
 
         <View style={styles.header}>
           <TouchableOpacity
@@ -617,217 +556,14 @@ const address = () => {
           <Text style={styles.addButtonText}>Add New Address</Text>
         </TouchableOpacity>
 
-        <Modal
-          visible={editModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setEditModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setEditModalVisible(false)}
-                  disabled={loading}
-                >
-                  <AntDesign name="close" size={24} color="#5D4037" />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Edit Address</Text>
-              </View>
-
-              <ScrollView style={styles.formContainer}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Full Name</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={formData.FullName}
-                    onChangeText={(text) => handleFormChange('FullName', text)}
-                    placeholder="Enter your full name"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Street Address</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={formData.Street}
-                    onChangeText={(text) => handleFormChange('Street', text)}
-                    placeholder="Enter street address"
-                  />
-                </View>
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.formLabel}>City</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.City}
-                      onChangeText={(text) => handleFormChange('City', text)}
-                      placeholder="City"
-                    />
-                  </View>
-
-                  <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.formLabel}>State</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.State}
-                      onChangeText={(text) => handleFormChange('State', text)}
-                      placeholder="State"
-                      maxLength={2}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.formLabel}>ZIP Code</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.ZIP}
-                      onChangeText={(text) => handleFormChange('ZIP', text)}
-                      placeholder="ZIP Code"
-                      keyboardType="number-pad"
-                      maxLength={5}
-                    />
-                  </View>
-
-                  <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.formLabel}>Phone Number</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.Phone}
-                      onChangeText={(text) => handleFormChange('Phone', text)}
-                      placeholder="Phone Number"
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.noteContainer}>
-                  <Text style={styles.noteText}>
-                    Note: You can set this as your default address after saving.
-                  </Text>
-                </View>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleUpdateAddress}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Save Changes</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        <Modal
-          visible={newAddressModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setNewAddressModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setNewAddressModalVisible(false)}
-                  disabled={loading}
-                >
-                  <AntDesign name="close" size={24} color="#5D4037" />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Add New Address</Text>
-              </View>
-
-              <ScrollView style={styles.formContainer}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Full Name</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={formData.FullName}
-                    onChangeText={(text) => handleFormChange('FullName', text)}
-                    placeholder="Enter your full name"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Street Address</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={formData.Street}
-                    onChangeText={(text) => handleFormChange('Street', text)}
-                    placeholder="Enter street address"
-                  />
-                </View>
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.formLabel}>City</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.City}
-                      onChangeText={(text) => handleFormChange('City', text)}
-                      placeholder="City"
-                    />
-                  </View>
-
-                  <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.formLabel}>State</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.State}
-                      onChangeText={(text) => handleFormChange('State', text)}
-                      placeholder="State"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.formLabel}>ZIP Code</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.ZIP}
-                      onChangeText={(text) => handleFormChange('ZIP', text)}
-                      placeholder="ZIP Code"
-                      keyboardType="number-pad"
-                    />
-                  </View>
-
-                  <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.formLabel}>Phone Number</Text>
-                    <TextInput
-                      style={styles.formInput}
-                      value={formData.Phone}
-                      onChangeText={(text) => handleFormChange('Phone', text)}
-                      placeholder="Phone Number"
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleCreateAddress}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Save Address</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        <AddressModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSubmit={handleSubmitAddress}
+          currentAddress={currentAddress}
+          isEditing={isEditing}
+          loading={loading}
+        />
       </LinearGradient>
     </>
   );
@@ -1072,72 +808,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     fontWeight: '500',
-  },
-  deleteModalContent: {
-    width: '85%',
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 22,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  deleteModalHeader: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  deleteModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-  },
-  deleteModalText: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  deleteModalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  deleteModalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f1f2f6',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    color: '#555',
-    fontWeight: 'bold',
-  },
-  confirmButton: {
-    backgroundColor: '#FF5252',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  warningText: {
-    color: '#FF9800',
-    fontWeight: 'bold',
-  },
-  deleteModalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
 });
 

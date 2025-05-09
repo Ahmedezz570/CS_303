@@ -15,7 +15,7 @@ export default function TabLayout() {
           backgroundColor: '#ffffff',
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-       
+
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -3 },
           shadowOpacity: 0.05,
@@ -50,7 +50,7 @@ export default function TabLayout() {
           )
         }}
       />
-            <Tabs.Screen
+      <Tabs.Screen
         name='chatBot'
         options={{
           title: 'Chat',
@@ -59,16 +59,6 @@ export default function TabLayout() {
           )
         }}
       />
-      {/* <Tabs.Screen
-        name='notifications'
-        options={{
-          title: 'Notification',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name='notifications-outline' size={24} color={color} />
-          )
-        }}
-      /> */}
-
       <Tabs.Screen
         name='profile'
         options={{
@@ -78,15 +68,6 @@ export default function TabLayout() {
           )
         }}
       />
-      {/* <Tabs.Screen
-        name='About'
-        options={{
-          title: 'About',
-          tabBarIcon: ({ color }) => (
-            <Ionicons name='information-circle-outline' size={24} color={color} />
-          )
-        }}
-      /> */}
     </Tabs>
   );
 }

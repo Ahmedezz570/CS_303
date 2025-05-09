@@ -18,7 +18,7 @@ import { db } from '../../Firebase/Firebase';
 import { Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome, Ionicons, Feather, AntDesign, Entypo } from '@expo/vector-icons';
-import MiniAlert from '../(ProfileTabs)/MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
 
 interface OrderItem {
     id: string;

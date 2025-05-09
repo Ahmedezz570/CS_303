@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 50,
         left: 20,
-        right: 20,
+        right: 10,
         padding: 12,
         borderRadius: 10,
         zIndex: 999,
@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         width: '90%',
         shadowOffset: { width: 0, height: 2 },
+        paddingHorizontal: 30,
     },
     alertText: {
         color: '#fff',

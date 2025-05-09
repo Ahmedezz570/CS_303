@@ -1,5 +1,4 @@
-
-import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native'
+import { Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { auth, db } from '../Firebase/Firebase';
@@ -7,6 +6,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
+import MiniAlert from '../components/MiniAlert';
 
 
 const Register = () => {
@@ -16,38 +16,47 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showpass, setshowpass] = useState(true);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+  const [load, setLoad] = useState(false);
+
   const router = useRouter();
   let x = /\d/.test(password);
   let hasCapital = /[A-Z]/.test(password);
   let hassmall = /[a-z]/.test(password);
   const hasSpecialChar = /[_@#$%]/.test(password);
 
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
+  };
 
-  const rand=Math.floor(Math.random() * 60) + 1;
-  
+  const rand = Math.floor(Math.random() * 60) + 1;
+
   const handleRegister = async () => {
     if (!username || !email || !password) {
-      Alert.alert("Error", "Please fill all fields");
+      showAlert("Please fill all fields", "error");
       return;
     }
     if (password.length < 8) {
-      Alert.alert("Weak Password", "Password must be at least 8 characters.");
-
-
-
+      showAlert("Password must be at least 8 characters.", "error");
       return;
     }
     if (!x || !hasCapital || !hassmall || !hasSpecialChar) {
-      if (!x) { Alert.alert("Weak Password", "Password Must Contain a Number. "); }
-      else if (!hasCapital) { Alert.alert("Weak Password", "Password Must Contain a Capital Letter"); }
-      else if (!hassmall) { Alert.alert("Weak Password", "Password Must Contain  Letters"); }
-      else if (!hasSpecialChar) { Alert.alert("Weak Password", "Password Must Contain a Special Character Like @,_,%,#,$"); }
+      if (!x) { showAlert("Password Must Contain a Number.", "error"); }
+      else if (!hasCapital) { showAlert("Password Must Contain a Capital Letter", "error"); }
+      else if (!hassmall) { showAlert("Password Must Contain Letters", "error"); }
+      else if (!hasSpecialChar) { showAlert("Password Must Contain a Special Character Like @,_,%,#,$", "error"); }
       return;
     }
     setLoading(true);
 
     try {
-
       const q = query(collection(db, 'Users'), where('username', '==', username))
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) {
@@ -63,31 +72,28 @@ const Register = () => {
           isBlocked: false,
         });
 
-        Alert.alert("Success", "User created successfully");
-        router.replace('/Login');
+        showAlert("User created successfully", "success");
+        router.push({ pathname: '/Onboarding', params: { fromRegister: true, userId: user.uid } });
       }
       else {
-        Alert.alert("Eroor", "username is already used")
+        showAlert("Username is already used", "error");
       }
     } catch (error) {
       if (error.message === "Firebase: Error (auth/email-already-in-use).") {
-        Alert.alert("Error", "this email already exist");
+        showAlert("This email already exists", "error");
       }
-     else if (error.message === "Firebase: Error (auth/invalid-email).") {
-        Alert.alert("Error", "wrong format of email");
+      else if (error.message === "Firebase: Error (auth/invalid-email).") {
+        showAlert("Wrong format of email", "error");
       }
       else {
-        Alert.alert("Registration Error", error.message);
+        showAlert(error.message, "error");
       }
     }
     setLoading(false);
   }
 
-
-
-
   const back = () => {
-    router.replace('/Login');
+    router.back();
   }
 
   const reset = () => {
@@ -96,6 +102,13 @@ const Register = () => {
   }
   return (
     <View style={styles.fl}>
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
 
       <View style={styles.container}>
         <TouchableOpacity style={styles.backbut} onPress={back}>
@@ -103,14 +116,14 @@ const Register = () => {
         </TouchableOpacity>
         <Text style={styles.title}>Create Account</Text>
         <TextInput placeholder="Username" style={styles.input} value={username} onChangeText={setUsername} />
-        <TextInput placeholder="Email Address" style={styles.input} value={email} onChangeText={setEmail} />
+        <TextInput placeholder="Email Address" style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
         <View style={styles.pass}>
           <TextInput style={styles.passinput} placeholder="Password" secureTextEntry={showpass} value={password} onChangeText={setPassword} />
           {password.length != 0 && <TouchableOpacity style={styles.passbutt} onPress={() => setshowpass(!showpass)}>
             <Icon name={showpass ? 'eye-slash' : 'eye'} size={24} color="black" />
           </TouchableOpacity>}
         </View>
-        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={load}>
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
         <View style={styles.semif}>

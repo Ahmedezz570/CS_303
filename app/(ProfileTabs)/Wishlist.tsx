@@ -9,15 +9,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   Animated,
-  Dimensions,
-  Modal
+  Dimensions
 } from 'react-native';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { auth, db } from '../../Firebase/Firebase';
 import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { MaterialIcons, FontAwesome, Ionicons, AntDesign, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import MiniAlert from './MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
+import DeleteModal from '../../components/DeleteModal';
 
 interface Product {
   id: string;
@@ -166,7 +166,7 @@ const Wishlist = () => {
       });
 
       setFavorites(prev => prev.filter(item => item.id !== selectedProduct.id));
-      setAlertMsg(`${String(selectedProduct.name).split(' ').slice(0, 2).join(' ')} has been removed from your favorites`);
+      setAlertMsg(`${String(selectedProduct.name).split(' ').slice(0, 2).join(' ')} removed from your favorites`);
       setAlertType('success');
 
       setTimeout(() => {
@@ -301,50 +301,17 @@ const Wishlist = () => {
           />
         )}
 
-        <Modal
+        <DeleteModal
           visible={deleteModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setDeleteModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <MaterialIcons name="delete" size={36} color="#FF6B6B" />
-                <Text style={styles.modalTitle}>
-                  Remove from Favorites
-                </Text>
-              </View>
-
-              <Text style={styles.modalText}>
-                Are you sure you want to remove{' '}
-                <Text style={{ fontWeight: 'bold' }}>{selectedProduct?.name}</Text>{' '}
-                from your favorites?
-              </Text>
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setDeleteModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={removeFromFavorites}
-                  disabled={deleteLoading}
-                >
-                  {deleteLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.confirmButtonText}>Remove</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setDeleteModalVisible(false)}
+          onConfirm={removeFromFavorites}
+          isLoading={deleteLoading}
+          title="Remove from Favorites"
+          message={selectedProduct ?
+            `Are you sure you want to remove ${selectedProduct.name} from your favorites?` :
+            "Are you sure you want to remove this item from your favorites?"}
+          confirmButtonText="Remove"
+        />
 
         <View style={styles.header}>
           <TouchableOpacity
@@ -738,68 +705,6 @@ const styles = StyleSheet.create({
     color: '#e91e63',
     fontWeight: '500',
     marginLeft: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '85%',
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 22,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  modalButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f1f2f6',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    color: '#555',
-    fontWeight: 'bold',
-  },
-  confirmButton: {
-    backgroundColor: '#FF6B6B',
-  },
-  confirmButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
 });
 

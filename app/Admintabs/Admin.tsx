@@ -12,7 +12,7 @@ import { getDocs, collection } from 'firebase/firestore';
 import { auth, db, getUserData } from '../../Firebase/Firebase';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
-import MiniAlert from '../(ProfileTabs)/MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 

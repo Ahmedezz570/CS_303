@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import {View,Text,Image,TouchableOpacity,Modal,Pressable,StyleSheet,ActivityIndicator,Dimensions } from 'react-native';
-import { useCart } from './CartContext'; 
+import { View, Text, Image, TouchableOpacity, Modal, Pressable, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { useCart } from './CartContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import ModernAlert from '../../components/ModernAlert';
@@ -10,8 +10,8 @@ const Item = ({ item }) => {
   const [pressed, setPressed] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
-  const { addToCart } = useCart(); 
-  
+  const { addToCart } = useCart();
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({
     title: '',
@@ -19,24 +19,24 @@ const Item = ({ item }) => {
     type: 'info',
     primaryButtonText: 'OK',
     secondaryButtonText: '',
-    onPrimaryPress: () => {},
-    onSecondaryPress: () => {}
+    onPrimaryPress: () => { },
+    onSecondaryPress: () => { }
   });
 
   const showAlert = (config) => {
     setAlertConfig(config);
     setAlertVisible(true);
   };
-  
+
   if (!item || !item.image || !item.price || !item.name) {
     return null;
   }
-  
+
   const handleAddToCart = () => {
     try {
-      addToCart(item);  
+      addToCart(item);
       setModalVisible(false);
-      
+
       showAlert({
         title: 'Added Successfully',
         message: `Added ${item.name} to your cart`,
@@ -55,17 +55,17 @@ const Item = ({ item }) => {
       });
     }
   };
-  
+
   const handleProductPress = () => {
     router.push({
       pathname: "/singlepage",
-      params: { 
+      params: {
         id: item.docId,
         category: item.category
       }
     });
   };
-  
+
   const handleFavoritePress = () => {
     try {
       setPressed(!pressed);
@@ -73,7 +73,7 @@ const Item = ({ item }) => {
       console.error("Error toggling favorite:", error);
     }
   };
-  
+
   return (
     <View>
       <Modal
@@ -86,14 +86,14 @@ const Item = ({ item }) => {
           <View style={styles.modalView}>
             <Text style={styles.modalText}>Do you want to add to your cart?</Text>
             <View style={styles.modalButtons}>
-              <Pressable 
-                style={[styles.button, styles.buttonAdd]} 
+              <Pressable
+                style={[styles.button, styles.buttonAdd]}
                 onPress={handleAddToCart}
               >
                 <Text style={styles.textStyle}>Add to cart</Text>
               </Pressable>
-              <Pressable 
-                style={[styles.button, styles.buttonCancel]} 
+              <Pressable
+                style={[styles.button, styles.buttonCancel]}
                 onPress={() => setModalVisible(!modalVisible)}
               >
                 <Text style={styles.textStyle}>Cancel</Text>
@@ -117,14 +117,14 @@ const Item = ({ item }) => {
             onLoadEnd={() => setImageLoading(false)}
           />
           {imageLoading && (
-            <ActivityIndicator 
+            <ActivityIndicator
               style={StyleSheet.absoluteFill}
               size="large"
               color="#0000ff"
             />
           )}
         </View>
-        
+
         <View style={styles.productInfo}>
           <Text style={styles.productName} numberOfLines={2}>
             {item.name}
@@ -138,8 +138,8 @@ const Item = ({ item }) => {
             </Text>
           )}
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.favoriteButton}
           onPress={handleFavoritePress}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
@@ -151,8 +151,7 @@ const Item = ({ item }) => {
           />
         </TouchableOpacity>
       </Pressable>
-      
-      {/* Add ModernAlert component */}
+
       <ModernAlert
         visible={alertVisible}
         title={alertConfig.title}

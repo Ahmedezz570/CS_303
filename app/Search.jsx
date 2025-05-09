@@ -9,7 +9,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -17,19 +16,19 @@ import Gender from "../components/Gender";
 import Sort from "../components/Sort";
 import Price from "../components/Price";
 import { useRouter } from "expo-router";
-import { db , auth} from "../Firebase/Firebase";
+import { db, auth } from "../Firebase/Firebase";
 import Icon_1 from 'react-native-vector-icons/MaterialIcons';
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 30;
 import { collection, onSnapshot, setDoc, doc, getDoc, updateDoc, increment } from "firebase/firestore";
-
+import MiniAlert from "../components/MiniAlert";
 
 const SearchFilterScreen = () => {
   const [searchText, setSearchText] = useState("");
   const [sortModalVisible, setSortModalVisible] = useState(false);
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
-const currentUser = auth.currentUser;
+  const currentUser = auth.currentUser;
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
 
@@ -37,6 +36,19 @@ const currentUser = auth.currentUser;
   const [maxPrice, setMaxPrice] = useState(1000000);
   const [sortOption, setSortOption] = useState("Newest");
   const [selectedGender, setSelectedGender] = useState(null);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+  const [load, setLoad] = useState(false);
+
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
+  };
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
@@ -109,43 +121,35 @@ const currentUser = auth.currentUser;
 
   const handleGenderSelect = (gender) => {
     setSelectedGender(gender);
-  
+
     const filtered = data.filter((item) => {
       const matchSearch = item.name.toLowerCase().includes(searchText.toLowerCase());
       const matchPrice =
         Number(item.price) >= minPrice && Number(item.price) <= maxPrice;
       const matchGender = gender ? item.category === gender : true;
-  
+
       return matchSearch && matchPrice && matchGender;
     });
-  
+
     setFilteredData(filtered);
-    setGenderModalVisible(false); 
-};
-const applyDiscount = (price , discountPercentage ) => {
-  return Math.floor(price - (price * discountPercentage) / 100);
-};
-const handleAddToCart = async (item) => {
+    setGenderModalVisible(false);
+  };
+  const applyDiscount = (price, discountPercentage) => {
+    return Math.floor(price - (price * discountPercentage) / 100);
+  };
+  const handleAddToCart = async (item) => {
     if (!currentUser) {
-      // showAlert({
-      //   title: 'Sign in required',
-      //   message: 'Please sign in to add products to your shopping cart',
-      //   type: 'warning',
-      //   primaryButtonText: 'Sign In',
-      //   secondaryButtonText: 'Cancel',
-      //   onPrimaryPress: () => router.push("/Login"),
-      // });
-      Alert.alert("Sign in required", "Please sign in to add products to your shopping cart", [
-        { text: "Sign In", onPress: () => router.push("/Login") },
-        { text: "Cancel" },
-      ]);
+      showAlert('Please sign in to add products to your shopping cart', 'error');
+      setTimeout(() => {
+        router.push("/Login");
+      }, 3000);
       return;
     }
-  
+
     try {
       const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', item.docId);
       const cartDocSnap = await getDoc(cartDocRef);
-  
+
       if (cartDocSnap.exists()) {
         await updateDoc(cartDocRef, {
           quantity: increment(1),
@@ -162,46 +166,30 @@ const handleAddToCart = async (item) => {
           createdAt: new Date(),
         });
       }
-  
-      // showAlert({
-      //   title: 'Added Successfully',
-      //   message: `${item.name} has been added to your shopping cart`,
-      //   type: 'cart',
-      //   primaryButtonText: 'Continue',
-      //   secondaryButtonText: 'Go to Cart',
-      //   onSecondaryPress: () => router.push("/cart"),
-      // });
-      Alert.alert("Added Successfully", `${item.name} has been added to your shopping cart`, [
-        { text: "Continue" },
-        { text: "Go to Cart", onPress: () => router.push("/cart") },
-      ]);
-  
+      showAlert(`${String(item.name).split(' ').slice(0, 2).join(' ')} Added to your shopping cart`, 'success');
+
     } catch (error) {
       console.error("Error adding to cart:", error);
-      // showAlert({
-      //   title: 'Error',
-      //   message: 'Failed to add product to cart. Please try again.',
-      //   type: 'error',
-      //   primaryButtonText: 'OK',
-      // });
-      Alert.alert(error , "Failed to add product to cart. Please try again.");
+      showAlert('Failed to add product to cart. Please try again.', 'error');
     }
   };
   const renderItem = ({ item }) => (
     <TouchableOpacity
-    onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })} 
+      onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}
+      disabled={load}
     >
       <View style={styles.productCard}>
         <Image source={{ uri: item.image }} style={styles.productImage} />
         <Text style={styles.productTitle} numberOfLines={3}>{item.name}</Text>
         <Text style={styles.productPrice}>EGP {applyDiscount(item.price, item.discount)}</Text>
-         <TouchableOpacity
-                    style={styles.addToCartButton}
-                    onPress={() => handleAddToCart(item)}
-                  >
-                    <Icon name="shopping-cart" size={20} color="#fff" />
-                    <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
-                  </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          onPress={() => handleAddToCart(item)}
+          disabled={load}
+        >
+          <Icon name="shopping-cart" size={20} color="#fff" />
+          <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -216,7 +204,13 @@ const handleAddToCart = async (item) => {
   };
   return (
     <>
-
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
       <StatusBar backgroundColor={"#f5e1d2"} barStyle="dark-content" />
       <View style={styles.container}>
         <View style={styles.header}>
@@ -236,9 +230,9 @@ const handleAddToCart = async (item) => {
 
         <View style={styles.filterContainer}>
           <TouchableOpacity style={styles.filterButton} onPress={() =>
-            
+
             Return()
-            }>
+          }>
             <Icon_1 name="clear" size={22} color="#000" />
           </TouchableOpacity>
 
@@ -422,7 +416,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  
+
   addToCartButton: {
     flexDirection: 'row',
     alignItems: 'center',

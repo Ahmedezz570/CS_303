@@ -26,8 +26,8 @@ const Review = ({ productId }) => {
     return () => unsubscribe();
   }, [productId]);
 
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
 
   const ratingDistribution = {
@@ -75,17 +75,17 @@ const Review = ({ productId }) => {
       alert('Please enter a comment and rating.');
       return;
     }
-  
+
     try {
       const currentUser = auth.currentUser;
-  
+
       if (!currentUser) {
         alert('You must be logged in to add a review.');
         return;
       }
-  
+
       const userData = await getUserData(currentUser.uid);
-  
+
       const reviewData = {
         comment,
         rating,
@@ -97,14 +97,14 @@ const Review = ({ productId }) => {
         dislikes: 0,
         userReaction: null
       };
-  
+
       const reviewsRef = collection(db, 'products', productId, 'reviews');
       await addDoc(reviewsRef, reviewData);
-  
+
       setComment('');
       setRating(0);
       setShowForm(false);
-  
+
     } catch (error) {
       console.error('Error adding review: ', error);
       alert('Something went wrong while adding the review.');
@@ -113,10 +113,10 @@ const Review = ({ productId }) => {
 
   const renderStars = (rating, size = 20) => {
     return (
-      <View style={{flexDirection: 'row'}}>
+      <View style={{ flexDirection: 'row' }}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <Text 
-            key={star} 
+          <Text
+            key={star}
             style={{
               fontSize: size,
               color: star <= rating ? '#FFD700' : '#ddd',
@@ -131,12 +131,12 @@ const Review = ({ productId }) => {
 
   const renderRatingBar = (starCount, count) => {
     const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-    
+
     return (
       <View style={styles.ratingBarContainer}>
         <Text style={styles.ratingBarLabel}>{starCount} star</Text>
         <View style={styles.ratingBarBackground}>
-          <View style={[styles.ratingBarFill, {width: `${percentage}%`}]} />
+          <View style={[styles.ratingBarFill, { width: `${percentage}%` }]} />
         </View>
         <Text style={styles.ratingBarCount}>{count}</Text>
       </View>
@@ -157,13 +157,15 @@ const Review = ({ productId }) => {
 
         <View style={styles.distributionContainer}>
           {[5, 4, 3, 2, 1].map((starCount) => (
-            renderRatingBar(starCount, ratingDistribution[starCount])
+            <View key={`rating-${starCount}`}>
+              {renderRatingBar(starCount, ratingDistribution[starCount])}
+            </View>
           ))}
         </View>
       </View>
 
-      {reviews.map((review,index) => (
-        <View key={review.id||index} style={styles.card}>
+      {reviews.map((review, index) => (
+        <View key={review.id || index} style={styles.card}>
           <Image source={{ uri: review.userImage || 'https://via.placeholder.com/50' }} style={styles.image} />
           <View style={styles.textContainer}>
             <View style={styles.reviewHeader}>
@@ -174,22 +176,22 @@ const Review = ({ productId }) => {
               {renderStars(review.rating)}
             </View>
             <Text style={styles.comment}>{review.comment}</Text>
-            
+
             <View style={styles.helpfulContainer}>
               <Text style={styles.helpfulText}>Was this review helpful?</Text>
               <View style={styles.reactionButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.reactionButton, 
+                    styles.reactionButton,
                     review.userReaction === 'like' && styles.likeActive
                   ]}
                   onPress={() => handleReaction(review.id, 'like')}
                 >
                   <Text style={styles.reactionText}>👍 {review.likes || 0}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.reactionButton, 
+                    styles.reactionButton,
                     review.userReaction === 'dislike' && styles.dislikeActive
                   ]}
                   onPress={() => handleReaction(review.id, 'dislike')}
@@ -203,8 +205,8 @@ const Review = ({ productId }) => {
       ))}
 
       {!showForm && (
-        <TouchableOpacity 
-          style={styles.addReviewButton} 
+        <TouchableOpacity
+          style={styles.addReviewButton}
           onPress={() => setShowForm(true)}
         >
           <Text style={styles.addReviewButtonText}>+ Add Your Review</Text>
@@ -232,7 +234,7 @@ const Review = ({ productId }) => {
             numberOfLines={4}
           />
           <View style={styles.formButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => {
                 setShowForm(false);
@@ -242,8 +244,8 @@ const Review = ({ productId }) => {
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.submitButton} 
+            <TouchableOpacity
+              style={styles.submitButton}
               onPress={handleAddReview}
             >
               <Text style={styles.submitButtonText}>Submit</Text>

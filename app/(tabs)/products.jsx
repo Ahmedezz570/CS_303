@@ -1,58 +1,62 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity , TextInput,Alert} from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import Icon from "react-native-vector-icons/Feather";
 const { width } = Dimensions.get('window');
 const cardWidth = (width / 2) - 24;
-import {db , auth} from '../../Firebase/Firebase';
+import { db, auth } from '../../Firebase/Firebase';
 import { collection, onSnapshot, setDoc, doc, getDoc, updateDoc, increment } from "firebase/firestore";
+import MiniAlert from '../../components/MiniAlert';
 
 const ProductList = () => {
-  const router = useRouter(); 
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
-  const currentUser = auth.currentUser; 
-  const applyDiscount = (price , discountPercentage ) => {
+  const currentUser = auth.currentUser;
+  const applyDiscount = (price, discountPercentage) => {
     return Math.floor(price - (price * discountPercentage) / 100);
   };
-
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+  const [load, setLoad] = useState(false);
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
+  };
   const filteredProducts = products.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-    useEffect(() => {
+  useEffect(() => {
 
-      const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-        const usersData = snapshot.docs.map((doc) => ({
-          docId: doc.id,  ...doc.data(),
-        }));
-        setProducts(usersData);
-      });
-  
-      return () => unsubscribe();
-    }, []);
-    console.log("Data:", products);
+    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+      const usersData = snapshot.docs.map((doc) => ({
+        docId: doc.id, ...doc.data(),
+      }));
+      setProducts(usersData);
+    });
 
-    const handleAddToCart = async (item) => {
+    return () => unsubscribe();
+  }, []);
+  console.log("Data:", products);
+
+  const handleAddToCart = async (item) => {
     if (!currentUser) {
-      // showAlert({
-      //   title: 'Sign in required',
-      //   message: 'Please sign in to add products to your shopping cart',
-      //   type: 'warning',
-      //   primaryButtonText: 'Sign In',
-      //   secondaryButtonText: 'Cancel',
-      //   onPrimaryPress: () => router.push("/Login"),
-      // });
-      Alert.alert("Sign in required", "Please sign in to add products to your shopping cart", [
-        { text: "Sign In", onPress: () => router.push("/Login") },
-        { text: "Cancel" },
-      ]);
+      showAlert('Please sign in to add products to your shopping cart', 'error');
+      setTimeout(() => {
+        router.replace("/Login");
+      }, 3000);
       return;
     }
-  
+
     try {
       const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', item.docId);
       const cartDocSnap = await getDoc(cartDocRef);
-  
+
       if (cartDocSnap.exists()) {
         await updateDoc(cartDocRef, {
           quantity: increment(1),
@@ -69,33 +73,22 @@ const ProductList = () => {
           createdAt: new Date(),
         });
       }
-  
-      // showAlert({
-      //   title: 'Added Successfully',
-      //   message: `${item.name} has been added to your shopping cart`,
-      //   type: 'cart',
-      //   primaryButtonText: 'Continue',
-      //   secondaryButtonText: 'Go to Cart',
-      //   onSecondaryPress: () => router.push("/cart"),
-      // });
-      Alert.alert("Added Successfully", `${item.name} has been added to your shopping cart`, [
-        { text: "Continue" },
-        { text: "Go to Cart", onPress: () => router.push("/cart") },
-      ]);
-  
+      showAlert(`${String(item.name).split(' ').slice(0, 2).join(' ')} Added to your shopping cart`, 'success');
+
     } catch (error) {
       console.error("Error adding to cart:", error);
-      // showAlert({
-      //   title: 'Error',
-      //   message: 'Failed to add product to cart. Please try again.',
-      //   type: 'error',
-      //   primaryButtonText: 'OK',
-      // });
-      Alert.alert(error , "Failed to add product to cart. Please try again.");
+      showAlert('Failed to add product to cart. Please try again.', 'error');
     }
   };
   return (
     <View style={styles.container}>
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
       <Text style={styles.heading}>All Products</Text>
       <TextInput
         placeholder="Search products..."
@@ -107,19 +100,20 @@ const ProductList = () => {
         data={filteredProducts}
         keyExtractor={(item) => item.docId}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
+          <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })} disabled={load}>
             <View style={styles.card}>
               <Image source={{ uri: item.image }} style={styles.image} />
               <View style={styles.textContainer}>
                 <Text style={styles.title} numberOfLines={3}>{item.name}</Text>
-                <Text style={styles.price}>EGP {applyDiscount(item.price,item.discount)}</Text>
-                   <TouchableOpacity
-                    style={styles.addToCartButton}
-                    onPress={() => handleAddToCart(item)}
-                  >
-                    <Icon name="shopping-cart" size={20} color="#fff" />
-                    <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
-                  </TouchableOpacity>
+                <Text style={styles.price}>EGP {applyDiscount(item.price, item.discount)}</Text>
+                <TouchableOpacity
+                  style={styles.addToCartButton}
+                  onPress={() => handleAddToCart(item)}
+                  disabled={load}
+                >
+                  <Icon name="shopping-cart" size={20} color="#fff" />
+                  <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableOpacity>
@@ -165,11 +159,11 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 120, 
+    height: 120,
     resizeMode: 'contain',
     borderRadius: 10,
   },
-  
+
   textContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -198,7 +192,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-    addToCartButton: {
+  addToCartButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

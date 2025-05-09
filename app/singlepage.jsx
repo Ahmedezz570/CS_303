@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { auth, db, getUserData } from "../Firebase/Firebase";
-import { doc, getDoc,collection, updateDoc, arrayUnion, arrayRemove,increment ,setDoc} from 'firebase/firestore';
+import { auth, db } from "../Firebase/Firebase";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment, setDoc } from 'firebase/firestore';
 import Review from './Review'
 import { getAuth } from 'firebase/auth';
-import { Stack,useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import ModernAlert from '../components/ModernAlert';
+import MiniAlert from '../components/MiniAlert';
+
 
 
 const ProductDetails = () => {
@@ -16,7 +18,7 @@ const ProductDetails = () => {
     const [product, setProduct] = useState({});
     const [isFavorite, setIsFavorite] = useState(false);
     const router = useRouter();
-    
+
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({
         title: '',
@@ -24,9 +26,21 @@ const ProductDetails = () => {
         type: 'info',
         primaryButtonText: 'OK',
         secondaryButtonText: '',
-        onPrimaryPress: () => {},
-        onSecondaryPress: () => {}
+        onPrimaryPress: () => { },
+        onSecondaryPress: () => { }
     });
+    const [alertMsg, setAlertMsg] = useState(null);
+    const [alertType, setAlertType] = useState('success');
+    const [load, setLoad] = useState(false);
+    const showAlert1 = (message, type = 'success') => {
+        setLoad(true);
+        setAlertMsg(message);
+        setAlertType(type);
+        setTimeout(() => {
+            setAlertMsg(null);
+            setLoad(false);
+        }, 3000);
+    };
 
     const showAlert = (config) => {
         setAlertConfig(config);
@@ -48,9 +62,9 @@ const ProductDetails = () => {
             return { label, data, key: `desc-item-${index}` };
         }).filter(item => item.label && item.data);
     };
-    const applyDiscount = (price , discountPercentage ) => {
+    const applyDiscount = (price, discountPercentage) => {
         return Math.floor(price - (price * discountPercentage) / 100);
-      };
+    };
     useEffect(() => {
         const getProduct = async () => {
             try {
@@ -112,95 +126,102 @@ const ProductDetails = () => {
                     Fav: arrayRemove(id)
                 });
                 setIsFavorite(false);
-                Alert.alert("Removed", `${product?.name} has been removed from favorites!`);
+                showAlert1(`${String(product?.name).split(' ').slice(0, 2).join(' ')} Removed from favorites!`, 'erroe');
             } else {
                 await updateDoc(userDocRef, {
                     Fav: arrayUnion(id)
                 });
                 setIsFavorite(true);
-                Alert.alert("Favorite", `${product?.name} has been added to favorites!`);
+                showAlert1(`${String(product?.name).split(' ').slice(0, 2).join(' ')} Added to favorites!`, "success");
             }
         } catch (error) {
             console.error("Error updating favorites:", error);
-            Alert.alert("Error", "Could not update favorites. Please try again.");
+            showAlert1("Error", "Could not update favorites. Please try again.");
         }
     };
 
-const handleAddToCart = async () => {
-  const currentUser = getAuth().currentUser;
-  if (!currentUser) {
-    showAlert({
-        title: 'Sign in required',
-        message: 'Please sign in to add products to your shopping cart',
-        type: 'warning',
-        primaryButtonText: 'Sign In',
-        secondaryButtonText: 'Cancel',
-        onPrimaryPress: () => router.push("/Login"),
-    });
-    return;
-  }
+    const handleAddToCart = async () => {
+        const currentUser = getAuth().currentUser;
+        if (!currentUser) {
+            showAlert({
+                title: 'Sign in required',
+                message: 'Please sign in to add products to your shopping cart',
+                type: 'warning',
+                primaryButtonText: 'Sign In',
+                secondaryButtonText: 'Cancel',
+                onPrimaryPress: () => router.push("/Login"),
+            });
+            return;
+        }
 
-  if (!id) {
-    showAlert({
-        title: 'Error',
-        message: 'Product ID missing',
-        type: 'error',
-        primaryButtonText: 'OK',
-    });
-    return;
-  }
+        if (!id) {
+            showAlert({
+                title: 'Error',
+                message: 'Product ID missing',
+                type: 'error',
+                primaryButtonText: 'OK',
+            });
+            return;
+        }
 
-  try {
-    const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', id);
-    const cartDocSnap = await getDoc(cartDocRef);
+        try {
+            const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', id);
+            const cartDocSnap = await getDoc(cartDocRef);
 
-    if (cartDocSnap.exists()) {
-      await updateDoc(cartDocRef, {
-        quantity: increment(1),
-      });
-    } else {
-      await setDoc(cartDocRef, {
-        productId: id,
-        name: product?.name,
-        price: product?.price,
-        image: product?.image,
-        discount: product?.discount || 0,
-        quantity: 1,
-        createdAt: new Date(),
-      });
-    }
+            if (cartDocSnap.exists()) {
+                await updateDoc(cartDocRef, {
+                    quantity: increment(1),
+                });
+            } else {
+                await setDoc(cartDocRef, {
+                    productId: id,
+                    name: product?.name,
+                    price: product?.price,
+                    image: product?.image,
+                    discount: product?.discount || 0,
+                    quantity: 1,
+                    createdAt: new Date(),
+                });
+            }
 
-    showAlert({
-        title: 'Added Successfully',
-        message: `${product?.name} has been added to your cart`,
-        type: 'cart',
-        primaryButtonText: 'Continue Shopping',
-        secondaryButtonText: 'Go to Cart',
-        onPrimaryPress: () => {},
-        onSecondaryPress: () => router.push("/cart"),
-    });
-  } catch (error) {
-    console.error("Error adding to cart:", error);
-    showAlert({
-        title: 'Error',
-        message: 'Failed to add product to cart. Please try again.',
-        type: 'error',
-        primaryButtonText: 'OK',
-    });
-  }
-};
+            showAlert({
+                title: 'Added Successfully',
+                message: `${product?.name} has been added to your cart`,
+                type: 'cart',
+                primaryButtonText: 'Continue Shopping',
+                secondaryButtonText: 'Go to Cart',
+                onPrimaryPress: () => { },
+                onSecondaryPress: () => router.push("/cart"),
+            });
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            showAlert({
+                title: 'Error',
+                message: 'Failed to add product to cart. Please try again.',
+                type: 'error',
+                primaryButtonText: 'OK',
+            });
+        }
+    };
 
-    
+
     const descriptionItems = parseDescription(product?.description);
 
     return (
         <View style={styles.wrapper}>
+            {alertMsg && (
+                <MiniAlert
+                    message={alertMsg}
+                    type={alertType}
+                    onHide={() => setAlertMsg(null)}
+                />
+            )}
             <View style={styles.headerWrapper}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#333" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleFavorite} style={styles.heartButton}>
+                    <TouchableOpacity onPress={handleFavorite} style={styles.heartButton} disabled={load}>
                         <Ionicons
                             name={isFavorite ? "heart" : "heart-outline"}
                             size={24}
@@ -227,10 +248,10 @@ const handleAddToCart = async () => {
 
                 <View style={styles.productHeader}>
                     <Text style={styles.name}>{product?.name}</Text>
-                    <Text style={{  textDecorationLine: "line-through", }}>{formatPrice(product?.price)} EGP</Text>
-                    <Text style={styles.price1}>{formatPrice(applyDiscount(product?.price , product?.discount))} EGP</Text>
+                    <Text style={{ textDecorationLine: "line-through", }}>{formatPrice(product?.price)} EGP</Text>
+                    <Text style={styles.price1}>{formatPrice(applyDiscount(product?.price, product?.discount))} EGP</Text>
 
-                  
+
                 </View>
 
                 <View style={styles.descriptionContainer}>
@@ -260,7 +281,7 @@ const handleAddToCart = async () => {
                 <TouchableOpacity style={styles.button} onPress={handleAddToCart} activeOpacity={0.8}>
                     <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>Total Price</Text>
-                        <Text style={styles.price}>{formatPrice (applyDiscount(product?.price , product?.discount))} EGP</Text>
+                        <Text style={styles.price}>{formatPrice(applyDiscount(product?.price, product?.discount))} EGP</Text>
                     </View>
                     <View style={styles.addCartContainer}>
                         <Ionicons name="cart-outline" size={20} color="#333" style={{ marginRight: 8 }} />
@@ -364,7 +385,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     price1: {
-      
+
         fontSize: 22,
         color: '#2E7D32',
         fontWeight: 'bold',
@@ -468,7 +489,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     price: {
-        
+
         fontSize: 18,
         color: '#333',
         fontWeight: 'bold',

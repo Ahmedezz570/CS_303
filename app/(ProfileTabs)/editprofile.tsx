@@ -1,10 +1,10 @@
 import { Stack, router } from 'expo-router';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions,ScrollView, Modal, ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Dimensions, ScrollView, Modal, ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useEffect, useState, useRef } from 'react'
 import { auth, getUserData } from '../../Firebase/Firebase';
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../Firebase/Firebase";
-import MiniAlert from './MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
 import { Ionicons, FontAwesome, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -176,19 +176,43 @@ const EditProfile = () => {
     return isValid;
   };
 
-  const validateAndUpdate = () => {
+  const validateAndUpdate = async () => {
     Keyboard.dismiss();
-    if (validateForm()) {
-      Update();
-    } else {
+    if (!validateForm()) {
       setAlertMessage("Please fix the errors in the form");
       setAlertType("error");
       setTimeout(() => setAlertMessage(null), 3000);
+      return;
+    }
+
+    if (username && username !== userData?.username) {
+      setLoad(true);
+      try {
+        const q = query(collection(db, 'Users'), where('username'.toLowerCase(), '==', username.toLowerCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          setAlertMessage("Username is already taken");
+          setAlertType("error");
+          setLoad(false);
+          setTimeout(() => setAlertMessage(null), 3000);
+          return;
+        }
+        Update();
+      } catch (error) {
+        console.error("Username validation error:", error);
+        setAlertMessage("Error checking username availability");
+        setAlertType("error");
+        setLoad(false);
+        setTimeout(() => setAlertMessage(null), 3000);
+      }
+    } else {
+      Update();
     }
   };
 
   async function Update() {
-    setLoad(true);
+    if (!load) setLoad(true);
     const currentUser = auth.currentUser;
     try {
       if (currentUser) {
@@ -294,7 +318,7 @@ const EditProfile = () => {
                       <MaterialCommunityIcons name="account" size={24} color="#8B5E3C" style={styles.inputIcon} />
                       <TextInput
                         style={styles.inputbox}
-                        placeholder={userData?.username ? String(userData.username).toUpperCase() : "Enter username"}
+                        placeholder={userData?.username ? userData.username : "Enter username"}
                         onChangeText={(text) => { setUsername(text); }}
                         placeholderTextColor="#8B8B8B"
                         autoCapitalize="none"

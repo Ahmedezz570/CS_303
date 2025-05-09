@@ -1,17 +1,29 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
-import React, { useEffect, useState , useRef} from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'expo-router';
-import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc ,arrayUnion } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../Firebase/Firebase.jsx";
 import { getAuth } from "firebase/auth";
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
+import MiniAlert from '../components/MiniAlert';
 const CartScreen = () => {
   const router = useRouter();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCheckoutComplete, setIsCheckoutComplete] = useState(false);
-  const animation = useRef(null);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+  const [load, setLoad] = useState(false);
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
+  };
   useEffect(() => {
     const fetchCart = async () => {
       try {
@@ -78,7 +90,7 @@ const CartScreen = () => {
   };
   const user = getAuth().currentUser;
   const clearCart = async () => {
-    
+
     if (!user) return;
 
     const cartRef = collection(db, "Users", user.uid, "cart");
@@ -91,71 +103,72 @@ const CartScreen = () => {
 
   const handleCheckout = async () => {
     try {
-        const cartRef = collection(db, "Users", user.uid, "cart");
-        const snapshot = await getDocs(cartRef);
+      const cartRef = collection(db, "Users", user.uid, "cart");
+      const snapshot = await getDocs(cartRef);
 
-        
-        const cartItems = [];
-        snapshot.forEach((doc) => {
-            cartItems.push({
-                id: doc.id,
-                ...doc.data()
-            });
+
+      const cartItems = [];
+      snapshot.forEach((doc) => {
+        cartItems.push({
+          id: doc.id,
+          ...doc.data()
         });
+      });
 
-        if (cartItems.length === 0) {
-            Alert.alert("Cart is empty", "There are no items to checkout.");
-            return;
-        }
+      if (cartItems.length === 0) {
+        showAlert('Cart is empty", "There are no items to checkout.', 'error');
+        return;
+      }
 
-        const userDocRef = doc(db, "Users", user.uid);
+      const userDocRef = doc(db, "Users", user.uid);
 
-        
-        await updateDoc(userDocRef, {
-            Orders: cartItems,
-            Orders: arrayUnion(...cartItems)
-        });
 
-        setIsCheckoutComplete(true)
-       
-        snapshot.forEach(async (doc) => {
-            await deleteDoc(doc.ref);
-        });
+      await updateDoc(userDocRef, {
+        Orders: cartItems,
+        Orders: arrayUnion(...cartItems)
+      });
 
-       
-        setCart([]);
+      setIsCheckoutComplete(true)
+
+      snapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+
+
+      setCart([]);
 
     } catch (error) {
-        console.error("Error during checkout:", error);
-        Alert.alert("Error", "Could not complete checkout. Please try again.");
+      console.error("Error during checkout:", error);
+      showAlert('Could not complete checkout. Please try again.', 'error');
     }
-};
-const applyDiscount = (price , discountPercentage ) => {
-  return Math.floor(price - (price * discountPercentage) / 100);
-};
-if (isCheckoutComplete) {
-  return (
-    <View style={{  backgroundColor: 'white',
-      padding: 20,
-      borderRadius: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
+  };
+  const applyDiscount = (price, discountPercentage) => {
+    return Math.floor(price - (price * discountPercentage) / 100);
+  };
+  if (isCheckoutComplete) {
+    return (
+      <View style={{
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
       }}>
-      <LottieView
-        source={require('../components/Animation.json')} 
-        autoPlay
-        loop={false}
-        onAnimationFinish={() => setIsCheckoutComplete(false)}
-        style={{ width: 200, height: 200 }}
-      />
-      <Text style={{ fontSize: 20, marginTop: 20 }}>Checkout Successful!</Text>
-    
-    </View>
-  );
-}
+        <LottieView
+          source={require('../components/Animation.json')}
+          autoPlay
+          loop={false}
+          onAnimationFinish={() => setIsCheckoutComplete(false)}
+          style={{ width: 200, height: 200 }}
+        />
+        <Text style={{ fontSize: 20, marginTop: 20 }}>Checkout Successful!</Text>
+
+      </View>
+    );
+  }
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + applyDiscount(item.price,item.discount)* item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + applyDiscount(item.price, item.discount) * item.quantity, 0);
   const shippingCost = cart.length > 0 ? 50 : 0;
   const tax = 0;
   let total = subtotal + shippingCost + tax;
@@ -168,17 +181,24 @@ if (isCheckoutComplete) {
 
   return (
     <View style={styles.container}>
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
       <View style={styles.topBar}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
             <Ionicons name="arrow-back-outline" size={24} color="black" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/(tabs)/products')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/(tabs)/products')}>
             <Ionicons name="pricetags-outline" size={24} color="black" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/(tabs)/home')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.replace('/(tabs)/home')}>
             <Ionicons name="home-outline" size={24} color="black" />
           </TouchableOpacity>
         </View>
@@ -190,9 +210,8 @@ if (isCheckoutComplete) {
             <Text style={styles.clearButtonText}>Remove All</Text>
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 90 , justifyContent : 'center', alignItems: 'center'}}>
-          {/* <Text style={{  fontSize: 18,color: "#555",textAlign: "center",marginTop: 20,}}>Cart is empty</Text> */}
-        </View>
+          <View style={{ width: 90, justifyContent: 'center', alignItems: 'center' }}>
+          </View>
         )}
       </View>
 
@@ -206,8 +225,7 @@ if (isCheckoutComplete) {
             </TouchableOpacity>
             <View style={styles.info}>
               <Text style={styles.name}>{item.name}</Text>
-              {/* <Text style={styles.details}>Size - {item.size}  Color - {item.color}</Text> */}
-              <Text style={styles.price}>EGP{applyDiscount(item.price ,item.discount)* item.quantity}</Text>
+              <Text style={styles.price}>EGP{applyDiscount(item.price, item.discount) * item.quantity}</Text>
             </View>
             <View style={styles.quantityContainer}>
               <TouchableOpacity onPress={() => updateQuantity(item.id, 'decrease')} style={styles.quantityButton}>
@@ -224,46 +242,46 @@ if (isCheckoutComplete) {
           </View>
         )}
       />
-{cart.length > 0 ? (
-  <>
-      <View style={styles.summary}>
-        <Text style={styles.summaryText}>Subtotal: EGP{subtotal}</Text>
-        <Text style={styles.summaryText}>Shipping Cost: EGP{shippingCost}</Text>
-        <Text style={styles.summaryText}>Tax: EGP{tax}</Text>
-        {totalItems >= 5 && (
-          <Text style={[styles.summaryText, { color: 'green' }]}>Discount: 10% Applied</Text>
-        )}
-        <Text style={styles.total}>Total: EGP{total}</Text>
-      </View>
+      {cart.length > 0 ? (
+        <>
+          <View style={styles.summary}>
+            <Text style={styles.summaryText}>Subtotal: EGP{subtotal}</Text>
+            <Text style={styles.summaryText}>Shipping Cost: EGP{shippingCost}</Text>
+            <Text style={styles.summaryText}>Tax: EGP{tax}</Text>
+            {totalItems >= 5 && (
+              <Text style={[styles.summaryText, { color: 'green' }]}>Discount: 10% Applied</Text>
+            )}
+            <Text style={styles.total}>Total: EGP{total}</Text>
+          </View>
 
-      <TouchableOpacity style={styles.checkoutButton} onPress={()=>{handleCheckout()}}>
-        <Text style={styles.checkoutText}>Checkout</Text>
-      </TouchableOpacity>
-     </> ):(
-       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-       <Text style={{ fontSize: 18, color: '#555', textAlign: 'center', marginTop: 20 }}>
-         Your Cart is currently empty.
-       </Text>
-       <Text style={{ fontSize: 16, color: '#888', textAlign: 'center', marginTop: 10 }}>
-         Start shopping and add items to your cart to see them here.
-       </Text>
-       <TouchableOpacity
-         style={{
-           backgroundColor: '#FF5733',
-           paddingVertical: 12,
-           paddingHorizontal: 30,
-           borderRadius: 25,
-           marginTop: 20,
-         }}
-         onPress={() =>router.push("/(tabs)/home")} 
-       >
-         <Text style={{ color: 'white', fontSize: 16, textAlign: 'center' }}>
-           Shop Now
-         </Text>
-       </TouchableOpacity>
-     </View>
-     
-        
+          <TouchableOpacity style={styles.checkoutButton} onPress={() => { handleCheckout() }}>
+            <Text style={styles.checkoutText}>Checkout</Text>
+          </TouchableOpacity>
+        </>) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, color: '#555', textAlign: 'center', marginTop: 20 }}>
+            Your Cart is currently empty.
+          </Text>
+          <Text style={{ fontSize: 16, color: '#888', textAlign: 'center', marginTop: 10 }}>
+            Start shopping and add items to your cart to see them here.
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#FF5733',
+              paddingVertical: 12,
+              paddingHorizontal: 30,
+              borderRadius: 25,
+              marginTop: 20,
+            }}
+            onPress={() => router.replace("/(tabs)/home")}
+          >
+            <Text style={{ color: 'white', fontSize: 16, textAlign: 'center' }}>
+              Shop Now
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+
       )}
     </View>
   );
@@ -289,10 +307,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    // shadowColor: '#000',
-    // shadowOpacity: 0.1,
-    // shadowRadius: 5,
-    // elevation: 3,
   },
   clearButton: {
     backgroundColor: 'red',
@@ -323,7 +337,7 @@ const styles = StyleSheet.create({
   info: { flex: 1, minWidth: '40%' },
   name: { fontSize: 16, fontWeight: 'bold' },
   details: { fontSize: 14, color: 'gray' },
-  price: { fontSize: 16, fontWeight: 'bold', color: 'red'   ,  position: 'relative', top: 10},
+  price: { fontSize: 16, fontWeight: 'bold', color: 'red', position: 'relative', top: 10 },
   quantityContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 },
   quantityButton: { backgroundColor: '#ddd', padding: 5, borderRadius: 5 },
   quantityText: { fontSize: 18, fontWeight: 'bold' },

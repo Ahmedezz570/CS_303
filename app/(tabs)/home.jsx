@@ -1,23 +1,24 @@
 import Icon from "react-native-vector-icons/Feather";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, Pressable, Alert, ActivityIndicator, RefreshControl } from "react-native";
-import { Stack, useRouter , useLocalSearchParams} from "expo-router";
+import { View, Text, Image, StyleSheet, FlatList, Dimensions, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - 24;
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {db} from '../../Firebase/Firebase';
-import { collection, onSnapshot, arrayUnion, arrayRemove, query, orderBy, limit, where } from "firebase/firestore";
+import { db } from '../../Firebase/Firebase';
+import { collection, onSnapshot, arrayUnion, arrayRemove, query, orderBy, limit } from "firebase/firestore";
 import { MaterialIcons } from '@expo/vector-icons';
-import {auth} from "../../Firebase/Firebase";
-import { doc, getDoc, setDoc, updateDoc, increment ,getDocs} from 'firebase/firestore';
+import { auth } from "../../Firebase/Firebase";
+import { doc, getDoc, setDoc, updateDoc, increment, getDocs } from 'firebase/firestore';
 
-import ModernAlert from '../../components/ModernAlert';
+import MiniAlert from '../../components/MiniAlert';
+
 const HomePage = () => {
   const { categories } = useLocalSearchParams();
   const selectedCategories = categories ? JSON.parse(categories) : [];
   const [storedCategories, setStoredCategories] = useState([]);
 
-  console.log(selectedCategories); 
+  console.log(selectedCategories);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,27 +26,26 @@ const HomePage = () => {
   const [favorites, setFavorites] = useState([]);
   const currentUser = auth.currentUser;
   const router = useRouter();
-  
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({
-    title: '',
-    message: '',
-    type: 'info',
-    primaryButtonText: 'OK',
-    secondaryButtonText: '',
-    onPrimaryPress: () => {},
-    onSecondaryPress: () => {}
-  });
-  const [filteredItems, setFilteredItems] = useState([]);
-  const showAlert = (config) => {
-    setAlertConfig(config);
-    setAlertVisible(true);
 
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState('success');
+
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [load, setLoad] = useState(false);
+  const showAlert = (message, type = 'success') => {
+    setLoad(true);
+    setAlertMsg(message);
+    setAlertType(type);
+    setTimeout(() => {
+      setAlertMsg(null);
+      setLoad(false);
+    }, 3000);
   };
+
   const storeCategories = async () => {
     try {
       if (selectedCategories.length > 0) {
-        
+
         const existing = await AsyncStorage.getItem('categories');
         if (!existing) {
           await AsyncStorage.setItem('categories', JSON.stringify(selectedCategories));
@@ -67,7 +67,7 @@ const HomePage = () => {
         setStoredCategories(parsed);
         console.log('Fetched categories from AsyncStorage:', parsed);
 
-       
+
         fetchAndFilterProducts(parsed);
       } else {
         console.log('No categories found in AsyncStorage');
@@ -75,140 +75,138 @@ const HomePage = () => {
     } catch (error) {
       console.log('Error fetching categories:', error);
     }
-};
-const fetchAndFilterProducts = async (categoriesToUse) => {
-  const querySnapshot = await getDocs(collection(db, "products"));
-  const allItems = [];
-  querySnapshot.forEach((doc) => {
-    allItems.push({ docId: doc.id, ...doc.data() });
-  });
-
-  console.log("this is in Async", categoriesToUse);
-  const filtered = allItems.filter(item =>
-    categoriesToUse.includes(item.category)
-  );
-
-  setFilteredItems(filtered);
-};
-
-  
-useEffect(() => {
-  const init = async () => {
-      await storeCategories();  
-      await getStoredCategories();  
   };
-  init();
-}, []);
+  const fetchAndFilterProducts = async (categoriesToUse) => {
+    const querySnapshot = await getDocs(collection(db, "products"));
+    const allItems = [];
+    querySnapshot.forEach((doc) => {
+      allItems.push({ docId: doc.id, ...doc.data() });
+    });
+
+    console.log("this is in Async", categoriesToUse);
+    const filtered = allItems.filter(item =>
+      categoriesToUse.includes(item.category)
+    );
+
+    setFilteredItems(filtered);
+  };
+
+
+  useEffect(() => {
+    const init = async () => {
+      await storeCategories();
+      await getStoredCategories();
+    };
+    init();
+  }, []);
 
 
 
-  
+
   const handleLogout = async () => {
     try {
-      await auth.signOut(); 
+      await auth.signOut();
       await AsyncStorage.removeItem('DataForUser');
       await AsyncStorage.removeItem('categories');
       console.log('Categories removed from AsyncStorage');
-      router.replace("/Login"); 
-      Alert.alert("Success", "Logout successful");
+      await showAlert('Bye Bye 👋 \nWe will miss you 🤍', 'error');
+      setTimeout(() => {
+        router.replace("/Login");
+      }, 3000);
     } catch (error) {
-      Alert.alert("Error", "There was an issue logging out. Please try again.");
-      console.error(error);  
+      showAlert('Error', 'Logout failed. Please try again.', 'error');
+      console.error(error);
     }
   };
-  
-const fetchProducts = useCallback(async () => {
-  try {
-    setLoading(true);
-    const productsQuery = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(20));
-    
-    const unsubscribeListener = onSnapshot(productsQuery, (snapshot) => {
-      const productsData = snapshot.docs.map((doc) => ({
-        docId: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productsData);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const productsQuery = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(20));
+
+      const unsubscribeListener = onSnapshot(productsQuery, (snapshot) => {
+        const productsData = snapshot.docs.map((doc) => ({
+          docId: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(productsData);
+        setLoading(false);
+        setRefreshing(false);
+      }, (err) => {
+        console.error("Error fetching products:", err);
+        setError("Unable to load products. Please try again later.");
+        setLoading(false);
+        setRefreshing(false);
+      });
+
+      return unsubscribeListener;
+    } catch (err) {
+      console.error("Error setting up products listener:", err);
+      setError("Something went wrong. Please try again later.");
       setLoading(false);
       setRefreshing(false);
-    }, (err) => {
-      console.error("Error fetching products:", err);
-      setError("Unable to load products. Please try again later.");
-      setLoading(false);
-      setRefreshing(false);
-    });
-    
-    return unsubscribeListener;
-  } catch (err) {
-    console.error("Error setting up products listener:", err);
-    setError("Something went wrong. Please try again later.");
-    setLoading(false);
-    setRefreshing(false);
-    
-    return () => {};
-  }
-}, []);
-  
+
+      return () => { };
+    }
+  }, []);
+
   const fetchFavorites = useCallback(async () => {
     if (!currentUser) return;
-    
+
     try {
       const userDocRef = doc(db, "Users", currentUser.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists() && userDoc.data().Fav) {
         setFavorites(userDoc.data().Fav || []);
-        
+
       }
     } catch (error) {
       console.error("Error fetching favorites:", error);
     }
   }, [currentUser]);
-  
+
   useEffect(() => {
     let unsubscribe;
-  
+
     const start = async () => {
-      unsubscribe = await fetchProducts(); 
+      unsubscribe = await fetchProducts();
       fetchFavorites();
     };
-  
-    start(); 
-  
+
+    start();
+
     return () => {
       if (typeof unsubscribe === 'function') {
-        unsubscribe(); 
+        unsubscribe();
       }
     };
   }, [fetchProducts, fetchFavorites]);
-  
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchProducts();
     fetchFavorites();
     fetchAndFilterProducts()
-  }, [fetchProducts, fetchFavorites , fetchAndFilterProducts]);
+  }, [fetchProducts, fetchFavorites, fetchAndFilterProducts]);
 
   const applyDiscount = (price, discountPercentage) => {
     return Math.floor(price - (price * discountPercentage) / 100);
   };
-  
+
   const handleAddToCart = async (item) => {
     if (!currentUser) {
-      showAlert({
-        title: 'Sign in required',
-        message: 'Please sign in to add products to your shopping cart',
-        type: 'warning',
-        primaryButtonText: 'Sign In',
-        secondaryButtonText: 'Cancel',
-        onPrimaryPress: () => router.push("/Login"),
-      });
+      showAlert('Please sign in to add products to your shopping cart', 'error');
+      setTimeout(() => {
+        router.replace("/Login");
+      }, 3000);
       return;
     }
-  
+
     try {
       const cartDocRef = doc(db, 'Users', currentUser.uid, 'cart', item.docId);
       const cartDocSnap = await getDoc(cartDocRef);
-  
+
       if (cartDocSnap.exists()) {
         await updateDoc(cartDocRef, {
           quantity: increment(1),
@@ -225,93 +223,61 @@ const fetchProducts = useCallback(async () => {
           createdAt: new Date(),
         });
       }
-  
-      showAlert({
-        title: 'Added Successfully',
-        message: `${item.name} has been added to your shopping cart`,
-        type: 'cart',
-        primaryButtonText: 'Continue',
-        secondaryButtonText: 'Go to Cart',
-        onSecondaryPress: () => router.push("/cart"),
-      });
-  
+      showAlert(`${String(item.name).split(' ').slice(0, 2).join(' ')} Added to your shopping cart`, 'success');
     } catch (error) {
       console.error("Error adding to cart:", error);
-      showAlert({
-        title: 'Error',
-        message: 'Failed to add product to cart. Please try again.',
-        type: 'error',
-        primaryButtonText: 'OK',
-      });
+      showAlert('Failed to add product to cart. Please try again.', 'error');
     }
   };
-  
+
   const isItemFavorite = useCallback((itemId) => {
     if (!currentUser || !favorites || favorites.length === 0) return false;
     return favorites.includes(itemId);
   }, [favorites, currentUser]);
-  
+
   const handleFavorite = async (item) => {
     if (!currentUser) {
-      showAlert({
-        title: 'Login Required',
-        message: 'Please log in to add items to your favorites.',
-        type: 'warning',
-        primaryButtonText: 'Log In',
-        secondaryButtonText: 'Cancel',
-        onPrimaryPress: () => router.push("/Login"),
-      });
-      
+      showAlert('Please log in to add items to your favorites.', 'error');
+      setTimeout(() => {
+        router.replace("/Login");
+      }, 2000);
       return;
     }
-    
+
     try {
       const userDocRef = doc(db, "Users", currentUser.uid);
       const isFavorite = isItemFavorite(item.docId);
-      
+
       if (isFavorite) {
         await updateDoc(userDocRef, {
           Fav: arrayRemove(item.docId),
         });
         setFavorites(prev => prev.filter(id => id !== item.docId));
+        showAlert(`${String(item.name).split(' ').slice(0, 2).join(' ')} Removed from your favorites!`, 'error');
       } else {
         await updateDoc(userDocRef, {
           Fav: arrayUnion(item.docId),
         });
         setFavorites(prev => [...prev, item.docId]);
+        showAlert(`${String(item.name).split(' ').slice(0, 2).join(' ')} Added to your favorites!`, 'success');
       }
-      
-      showAlert({
-        title: isFavorite ? 'Removed' : 'Added',
-        message: isFavorite
-          ? `${item?.name} has been removed from your favorites!`
-          : `${item?.name} has been added to your favorites!`,
-        type: isFavorite ? 'info' : 'success',
-        primaryButtonText: 'OK',
-      });
-      
-      
+
     } catch (error) {
       console.error("Error updating favorites:", error);
-      showAlert({
-        title: 'Error',
-        message: 'Failed to update favorites. Please try again.',
-        type: 'error',
-        primaryButtonText: 'OK',
-      });
+      showAlert('Failed to update favorites. Please try again.', 'error');
     }
   };
 
   const Item = ({ item }) => {
     const isFavorite = isItemFavorite(item.docId);
-    
+
     return (
-      <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })}>
+      <TouchableOpacity onPress={() => router.push({ pathname: "/singlepage", params: { id: item.docId } })} disabled={load}>
         <View style={styles.card}>
           <View style={{ position: 'relative', width: '100%', height: 120 }}>
-            <Image 
-              source={{ uri: item.image }} 
-              style={styles.image} 
+            <Image
+              source={{ uri: item.image }}
+              style={styles.image}
               resizeMethod="resize"
               resizeMode="contain"
               defaultSource={require('../../assets/images/loading-buffering.gif')}
@@ -325,6 +291,7 @@ const fetchProducts = useCallback(async () => {
             <TouchableOpacity
               style={styles.favoriteButton}
               onPress={() => handleFavorite(item)}
+              disabled={load}
             >
               <Icon name="heart" size={20} color={isFavorite ? "#E91E63" : "#fff"} />
             </TouchableOpacity>
@@ -336,10 +303,11 @@ const fetchProducts = useCallback(async () => {
             <Text style={styles.oldPrice}>{formatNumber(item.price)} EGP</Text>
             <Text style={styles.newPrice}>{formatNumber(applyDiscount(item.price, item.discount))} EGP</Text>
           </View>
-          
+
           <TouchableOpacity
             style={styles.addToCartButton}
             onPress={() => handleAddToCart(item)}
+            disabled={load}
           >
             <Icon name="shopping-cart" size={20} color="#fff" />
             <Text style={{ color: '#fff', marginLeft: 5 }}>Add to Cart</Text>
@@ -348,7 +316,7 @@ const fetchProducts = useCallback(async () => {
       </TouchableOpacity>
     );
   };
-  
+
   const Categories = [
     { id: 1, name: "Mobile", image: "https://i.ibb.co/4ZhGCKn2/apple-iphone-16-pro-desert-1-3.jpg" },
     { id: 2, name: "Computers", image: "https://i.ibb.co/xqvrtNZD/zh449-1.jpg" },
@@ -357,21 +325,21 @@ const fetchProducts = useCallback(async () => {
     { id: 5, name: "Women", image: "https://i.ibb.co/Kzr7MVxM/1.jpg" },
     { id: 6, name: "Kids", image: "https://i.ibb.co/20TYN7Lz/1.jpg" },
   ];
-  
+
   const formatNumber = (number) => {
     return new Intl.NumberFormat().format(number);
   };
-  
+
   const topSellingProducts = useMemo(() => {
     return [...products].sort((a, b) => (b.sold || 0) - (a.sold || 0)).slice(0, 10);
   }, [products]);
-  
+
   const newProducts = useMemo(() => {
     return products.slice(-5);
   }, [products]);
-  
- 
-  
+
+
+
   if (error) {
     return (
       <View style={styles.errorContainer}>
@@ -387,24 +355,24 @@ const fetchProducts = useCallback(async () => {
   return (
     <>
       <Stack screenOptions={{ headerShown: false }} />
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleLogout}>
+          <TouchableOpacity onPress={handleLogout} disabled={load}>
             <View style={styles.headerIconContainer}>
               <MaterialIcons name="logout" size={24} color="white" />
             </View>
           </TouchableOpacity>
-          
-         
-          
-        
-          
+
+
+
+
+
           <TouchableOpacity onPress={() => router.push("/cart")}>
             <View style={styles.headerIconContainer}>
               <Icon name="shopping-cart" size={20} color="#fff" />
@@ -415,15 +383,15 @@ const fetchProducts = useCallback(async () => {
         <TouchableOpacity onPress={() => router.push("/Search")}>
           <View style={styles.searchBar}>
             <Icon name="search" size={20} color="#888" style={styles.icon} />
-            <TextInput 
-              style={styles.input} 
-              placeholder="Search for products..." 
-              placeholderTextColor="#aaa" 
-              editable={false} 
+            <TextInput
+              style={styles.input}
+              placeholder="Search for products..."
+              placeholderTextColor="#aaa"
+              editable={false}
             />
           </View>
         </TouchableOpacity>
-        
+
         <Text style={styles.sectionTitle}>Categories</Text>
         <FlatList
           data={Categories}
@@ -436,9 +404,9 @@ const fetchProducts = useCallback(async () => {
               });
             }}>
               <View style={styles.categoryItem}>
-                <Image 
-                  source={{ uri: item.image }} 
-                  style={styles.categoryImage} 
+                <Image
+                  source={{ uri: item.image }}
+                  style={styles.categoryImage}
                   defaultSource={require('../../assets/images/loading-buffering.gif')}
                 />
                 <Text style={styles.categoryText}>{item.name}</Text>
@@ -451,19 +419,19 @@ const fetchProducts = useCallback(async () => {
         />
 
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }} 
-            style={styles.bannerimage} 
+          <Image
+            source={{ uri: 'https://b.top4top.io/p_34113iqov1.png' }}
+            style={styles.bannerimage}
             resizeMode="contain"
           />
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Selling</Text>
-         
+
         </View>
-        
-        {loading ? (
+
+        {loading && !load ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#E91E63" />
           </View>
@@ -480,10 +448,10 @@ const fetchProducts = useCallback(async () => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>New Arrivals</Text>
-          
+
         </View>
-        
-        {loading ? (
+
+        {loading && !load ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#E91E63" />
           </View>
@@ -500,10 +468,10 @@ const fetchProducts = useCallback(async () => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recommended For You</Text>
-        
+
         </View>
-        
-        {loading ? (
+
+        {loading && !load ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#E91E63" />
           </View>
@@ -519,17 +487,13 @@ const fetchProducts = useCallback(async () => {
         )}
       </ScrollView>
 
-      <ModernAlert
-        visible={alertVisible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        type={alertConfig.type}
-        primaryButtonText={alertConfig.primaryButtonText}
-        secondaryButtonText={alertConfig.secondaryButtonText}
-        onPrimaryPress={alertConfig.onPrimaryPress}
-        onSecondaryPress={alertConfig.onSecondaryPress}
-        onClose={() => setAlertVisible(false)}
-      />
+      {alertMsg && (
+        <MiniAlert
+          message={alertMsg}
+          type={alertType}
+          onHide={() => setAlertMsg(null)}
+        />
+      )}
     </>
   );
 };
@@ -560,13 +524,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginBottom: 20,
   },
-  icon: { 
-    marginRight: 10 
+  icon: {
+    marginRight: 10
   },
-  input: { 
-    flex: 1, 
-    fontSize: 16, 
-    color: "#333" 
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333"
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -585,8 +549,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  listContainer: { 
-    paddingBottom: 20 
+  listContainer: {
+    paddingBottom: 20
   },
   card: {
     width: cardWidth,
@@ -600,20 +564,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     alignItems: 'center',
-    height: 330, 
-    justifyContent: 'space-between', 
+    height: 330,
+    justifyContent: 'space-between',
   },
   image: {
-    width: '100%', 
+    width: '100%',
     height: 120,
-    resizeMode: 'contain', 
+    resizeMode: 'contain',
     borderRadius: 10,
     backgroundColor: '#f9f9f9',
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 10, 
+    marginTop: 10,
     textAlign: 'center',
     color: '#333',
     height: 40,
@@ -647,8 +611,8 @@ const styles = StyleSheet.create({
   },
   bannerimage: {
     width: '100%',
-    height: 120, 
-    resizeMode: 'contain', 
+    height: 120,
+    resizeMode: 'contain',
     borderRadius: 10,
   },
   imageContainer: {

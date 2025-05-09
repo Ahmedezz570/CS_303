@@ -63,7 +63,6 @@ const ModernAlert: React.FC<ModernAlertProps> = ({
     }
   }, [visible]);
 
-  // Set colors and icon based on type
   const getAlertStyle = () => {
     switch (type) {
       case 'success':
@@ -140,17 +139,14 @@ const ModernAlert: React.FC<ModernAlertProps> = ({
           ]}
         >
           <Pressable style={{ width: '100%' }} onPress={(e) => e.stopPropagation()}>
-            {/* Alert Header */}
             <View style={[styles.alertHeader, { backgroundColor: alertStyle.headerBgColor }]}>
               <Ionicons name={alertStyle.iconName as any} size={28} color="#fff" />
               <Text style={styles.titleText}>{title}</Text>
             </View>
             
-            {/* Alert Body */}
             <View style={[styles.alertBody, { backgroundColor: alertStyle.backgroundColor }]}>
               <Text style={styles.messageText}>{message}</Text>
               
-              {/* Alert Buttons */}
               <View style={styles.buttonsContainer}>
                 {secondaryButtonText && (
                   <TouchableOpacity 

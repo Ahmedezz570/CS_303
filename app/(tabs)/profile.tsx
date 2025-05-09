@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { auth, getUserData } from '../../Firebase/Firebase';
-import MiniAlert from '../(ProfileTabs)/MiniAlert';
+import MiniAlert from '../../components/MiniAlert';
 
 const Profile = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -19,7 +19,6 @@ const Profile = () => {
         setUserData(data);
       }
     };
-
     fetchUserData();
   }, []);
 
@@ -42,7 +41,7 @@ const Profile = () => {
           <View style={styles.info}>
             <View style={{ display: "flex", flexDirection: "row" }}>
               <Text style={styles.name}>
-                {(String(userData?.username).toUpperCase()) == "UNDEFINED" ? "Please Login..." : String(userData?.username).toUpperCase()}
+                {(String(userData?.username).toUpperCase()) == "UNDEFINED" ? "Please Login..." : userData?.username}
               </Text>
             </View>
             <Text style={styles.mail}>

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import context from '../context'; 
+import context from '../context';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 
-const GOOGLE_API_KEY = 'AIzaSyDN0TUfk_ll_ADfxtCVByEzUsEPAiZhhvA'; 
+const GOOGLE_API_KEY = 'AIzaSyDN0TUfk_ll_ADfxtCVByEzUsEPAiZhhvA';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_API_KEY}`;
 
 
@@ -25,7 +25,7 @@ export default function GeminiChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true); 
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -35,7 +35,7 @@ export default function GeminiChat() {
     setMessages(updatedMessages);
     setInput('');
     setLoading(true);
-    setShowSuggestions(false);  
+    setShowSuggestions(false);
 
     try {
       const contents = [
@@ -72,7 +72,7 @@ export default function GeminiChat() {
   };
 
   const handleSuggestionPress = (text) => {
-    setInput(text); 
+    setInput(text);
     sendMessage();
   };
 
@@ -98,9 +98,9 @@ export default function GeminiChat() {
 
   return (
     <View style={styles.container}>
-       <View style={styles.headerContainer}>
-    <Text style={styles.headerText}>I'm here for you, anytime!</Text>
-    </View>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>I'm here for you, anytime!</Text>
+      </View>
       <FlatList
         data={messages}
         renderItem={renderItem}
@@ -108,7 +108,7 @@ export default function GeminiChat() {
         contentContainerStyle={styles.messagesContainer}
       />
 
-      {showSuggestions && ( 
+      {showSuggestions && (
         <View style={styles.suggestionsContainer}>
           <View style={styles.suggestionsList}>
             {suggestions.map((text, index) => (
@@ -197,15 +197,15 @@ const styles = StyleSheet.create({
   userBubble: {
     alignSelf: 'flex-end',
     backgroundColor: "rgb(141, 141, 141)",
-        borderBottomRightRadius: 0
+    borderBottomRightRadius: 0
   },
   botBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f5e1d7', 
+    backgroundColor: '#f5e1d7',
     borderBottomLeftRadius: 0
   },
   bubbleText: {
-    color: 'black', 
+    color: 'black',
     fontSize: 16
   },
   inputContainer: {
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#BDBDBD', 
+    borderColor: '#BDBDBD',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -230,13 +230,13 @@ const styles = StyleSheet.create({
     color: '#212121'
   },
   sendButton: {
-    backgroundColor: 'rgb(66, 64, 64)', 
+    backgroundColor: 'rgb(66, 64, 64)',
     borderRadius: 24,
     padding: 10,
   },
   loader: {
     marginHorizontal: 8,
-    color: '#FFAB91', 
+    color: '#FFAB91',
   },
   suggestionsContainer: {
     paddingHorizontal: 10,
@@ -284,6 +284,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  
+
 });
 
